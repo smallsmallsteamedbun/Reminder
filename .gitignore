@@ -1,0 +1,14 @@
+# Visual Studio user and workspace state
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# .NET build output
+**/bin/
+**/obj/
+
+# Windows shell metadata
+Thumbs.db
+Desktop.ini
