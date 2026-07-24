@@ -1,0 +1,39 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <FontFamily x:Key="AppFontFamily">Microsoft YaHei UI</FontFamily>
+
+    <Color x:Key="PageBackgroundColor">#F3F5F8</Color>
+    <Color x:Key="SurfaceColor">#FFFFFFFF</Color>
+    <Color x:Key="SurfaceSubtleColor">#F7F8FB</Color>
+    <Color x:Key="BorderColor">#E3E6EC</Color>
+    <Color x:Key="BorderStrongColor">#CDD2DC</Color>
+    <Color x:Key="TextPrimaryColor">#20232B</Color>
+    <Color x:Key="TextSecondaryColor">#6D7280</Color>
+    <Color x:Key="TextMutedColor">#989EAA</Color>
+    <Color x:Key="PrimaryColor">#5F68C7</Color>
+    <Color x:Key="PrimaryHoverColor">#535DBD</Color>
+    <Color x:Key="PrimaryPressedColor">#4852AE</Color>
+    <Color x:Key="PrimarySubtleColor">#ECEEFB</Color>
+    <Color x:Key="DangerColor">#C44D58</Color>
+    <Color x:Key="DangerSubtleColor">#FBECEF</Color>
+    <Color x:Key="SuccessColor">#3E8A67</Color>
+
+    <SolidColorBrush x:Key="PageBackgroundBrush" Color="{StaticResource PageBackgroundColor}" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
+    <SolidColorBrush x:Key="SurfaceSubtleBrush" Color="{StaticResource SurfaceSubtleColor}" />
+    <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}" />
+    <SolidColorBrush x:Key="BorderStrongBrush" Color="{StaticResource BorderStrongColor}" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMutedColor}" />
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
+    <SolidColorBrush x:Key="PrimaryHoverBrush" Color="{StaticResource PrimaryHoverColor}" />
+    <SolidColorBrush x:Key="PrimaryPressedBrush" Color="{StaticResource PrimaryPressedColor}" />
+    <SolidColorBrush x:Key="PrimarySubtleBrush" Color="{StaticResource PrimarySubtleColor}" />
+    <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
+    <SolidColorBrush x:Key="DangerSubtleBrush" Color="{StaticResource DangerSubtleColor}" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
+
+</ResourceDictionary>

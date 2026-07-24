@@ -13,6 +13,15 @@
 - A project restore may intentionally restore the project-local `memory/` files together with the source and documentation.
 - After a restore that includes memory, re-read the restored `memory/active.md`, `memory/brief.md`, `memory/decisions.md`, and relevant session records. Treat the restored memory state as the current project record; do not silently recreate later discarded memory unless the user requests it.
 
+## Version Documentation and Release Commits
+
+- `docs/VERSION_HISTORY.md` is the concise, user-facing version update record.
+- Whenever the project version number changes, add or update that version's entry before committing or uploading the release.
+- Keep the project metadata, the version shown in the application, the current version in `docs/REQUIREMENTS.md`, and the matching `docs/VERSION_HISTORY.md` entry synchronized.
+- If the user requests an upload and mentions a version-number update, record the features and optimizations completed between the previous version and the current version before performing the release commit.
+- Keep version entries short and focused on user-visible functions and improvements. Do not fill the version history with implementation details.
+- A release upload may use the version number or the user's explicitly requested release wording directly as the commit message; the detailed content belongs in `docs/VERSION_HISTORY.md`.
+
 ## Codex Memory Protocol
 
 This project uses project-local memory files under `memory/` to preserve working state, durable knowledge, decisions, session history, and lightly organized near-source user-message records across long conversations, context compaction, interruptions, and separate sessions.

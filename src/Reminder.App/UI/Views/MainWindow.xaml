@@ -1,0 +1,398 @@
+<Window
+    x:Class="Reminder.App.UI.Views.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewModels="clr-namespace:Reminder.App.UI.ViewModels"
+    Title="Reminder"
+    Width="1180"
+    Height="760"
+    MinWidth="760"
+    MinHeight="560"
+    AutomationProperties.AutomationId="ReminderMainWindow"
+    Background="{StaticResource PageBackgroundBrush}"
+    FontFamily="{StaticResource AppFontFamily}"
+    Foreground="{StaticResource TextPrimaryBrush}"
+    WindowStartupLocation="CenterScreen"
+    mc:Ignorable="d">
+
+    <Grid Background="{StaticResource PageBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border
+            Grid.Row="0"
+            Padding="28,21"
+            Background="{StaticResource SurfaceBrush}"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Border
+                        Width="40"
+                        Height="40"
+                        Background="{StaticResource PrimaryBrush}"
+                        CornerRadius="10">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontSize="20"
+                            FontWeight="Bold"
+                            Foreground="White"
+                            Text="R" />
+                    </Border>
+                    <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                        <TextBlock
+                            FontSize="20"
+                            FontWeight="SemiBold"
+                            Text="{Binding AppName}" />
+                        <TextBlock
+                            Margin="0,2,0,0"
+                            FontSize="12"
+                            Foreground="{StaticResource TextSecondaryBrush}"
+                            Text="轻量、安静地照顾你的工作节奏" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Border
+                    Grid.Column="1"
+                    Padding="12,6"
+                    VerticalAlignment="Center"
+                    Background="{StaticResource PrimarySubtleBrush}"
+                    CornerRadius="13">
+                    <TextBlock
+                        FontSize="12"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource PrimaryBrush}"
+                        Text="{Binding VersionText}" />
+                </Border>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="28,24,28,18">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock
+                        FontSize="26"
+                        FontWeight="SemiBold"
+                        Text="提醒事件" />
+                    <TextBlock
+                        Margin="0,5,0,0"
+                        FontSize="13"
+                        Foreground="{StaticResource TextSecondaryBrush}"
+                        Text="{Binding EventSummary}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button
+                        AutomationProperties.AutomationId="PauseAllButton"
+                        Command="{Binding PauseAllCommand}"
+                        Content="全部暂停"
+                        Style="{StaticResource ReminderButtonStyle}" />
+                    <Button
+                        Margin="8,0,0,0"
+                        AutomationProperties.AutomationId="ResumeAllButton"
+                        Command="{Binding ResumeAllCommand}"
+                        Content="全部恢复"
+                        Style="{StaticResource ReminderButtonStyle}" />
+                    <Button
+                        Margin="8,0,0,0"
+                        AutomationProperties.AutomationId="RestartAllButton"
+                        Command="{Binding RestartAllCommand}"
+                        Content="全部重启"
+                        Style="{StaticResource ReminderButtonStyle}" />
+                    <Button
+                        Margin="12,0,0,0"
+                        AutomationProperties.AutomationId="AddEventButton"
+                        Command="{Binding AddEventCommand}"
+                        Content="＋ 添加事件"
+                        Style="{StaticResource PrimaryButtonStyle}" />
+                </StackPanel>
+            </Grid>
+
+            <Border
+                Grid.Row="1"
+                Margin="0,20,0,14"
+                Padding="14,10"
+                Background="{StaticResource PrimarySubtleBrush}"
+                CornerRadius="8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        Grid.Column="0"
+                        Margin="0,0,8,0"
+                        FontSize="14"
+                        Foreground="{StaticResource PrimaryBrush}"
+                        Text="●" />
+                    <TextBlock
+                        Grid.Column="1"
+                        FontSize="13"
+                        Foreground="{StaticResource TextSecondaryBrush}"
+                        Text="{Binding NotificationStatus}"
+                        TextTrimming="CharacterEllipsis" />
+                </Grid>
+            </Border>
+
+            <ScrollViewer
+                x:Name="EventListScrollViewer"
+                Grid.Row="2"
+                HorizontalScrollBarVisibility="Disabled"
+                PreviewMouseWheel="EventListScrollViewer_OnPreviewMouseWheel"
+                VerticalScrollBarVisibility="Auto">
+                <ItemsControl
+                    x:Name="EventItemsControl"
+                    ItemsSource="{Binding Events}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type viewModels:EventViewModel}">
+                            <Border
+                                Opacity="{Binding CardOpacity}"
+                                Style="{StaticResource EventCardStyle}">
+                                <ScrollViewer
+                                    HorizontalScrollBarVisibility="Auto"
+                                    PanningMode="HorizontalOnly"
+                                    VerticalScrollBarVisibility="Disabled">
+                                    <Grid MinWidth="1000">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <Grid Grid.Row="0" Margin="18,17,18,15">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="2.4*" MinWidth="230" />
+                                                <ColumnDefinition Width="94" />
+                                                <ColumnDefinition Width="94" />
+                                                <ColumnDefinition Width="190" />
+                                                <ColumnDefinition Width="112" />
+                                                <ColumnDefinition Width="86" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Grid.Column="0" Margin="0,0,18,0">
+                                                <TextBox
+                                                    MaxLength="40"
+                                                    AutomationProperties.Name="事件名称"
+                                                    KeyDown="EditableTextBox_OnKeyDown"
+                                                    LostKeyboardFocus="EditableTextBox_OnLostKeyboardFocus"
+                                                    Tag="Name"
+                                                    Text="{Binding NameInput, UpdateSourceTrigger=PropertyChanged}">
+                                                    <TextBox.Style>
+                                                        <Style TargetType="TextBox" BasedOn="{StaticResource InputTextBoxStyle}">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding HasNameError}" Value="True">
+                                                                    <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBox.Style>
+                                                </TextBox>
+                                                <TextBlock Margin="2,5,0,0" FontSize="12">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                                                            <Setter Property="Text" Value="{Binding StatusText}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding HasNameError}" Value="True">
+                                                                    <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                                                    <Setter Property="Text" Value="{Binding NameError}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+
+                                            <Button
+                                                Grid.Column="1"
+                                                Margin="0,0,8,0"
+                                                VerticalAlignment="Top"
+                                                Command="{Binding PauseCommand}"
+                                                Content="{Binding PauseButtonText}"
+                                                IsEnabled="{Binding CanPauseOrResume}"
+                                                Style="{StaticResource ReminderButtonStyle}" />
+                                            <Button
+                                                Grid.Column="2"
+                                                Margin="0,0,8,0"
+                                                VerticalAlignment="Top"
+                                                Command="{Binding RestartCommand}"
+                                                Content="重启"
+                                                IsEnabled="{Binding CanRestart}"
+                                                Style="{StaticResource ReminderButtonStyle}" />
+
+                                            <StackPanel Grid.Column="3" Margin="4,1,12,0">
+                                                <TextBlock
+                                                    FontSize="11"
+                                                    Foreground="{StaticResource TextMutedBrush}"
+                                                    Text="距离下次提醒" />
+                                                <TextBlock
+                                                    Margin="0,5,0,0"
+                                                    FontSize="17"
+                                                    FontWeight="SemiBold"
+                                                    Text="{Binding CountdownText}" />
+                                            </StackPanel>
+
+                                            <StackPanel
+                                                Grid.Column="4"
+                                                Margin="6,0,8,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Top">
+                                                <CheckBox
+                                                    AutomationProperties.Name="事件开关"
+                                                    IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                                    Style="{StaticResource ToggleSwitchStyle}" />
+                                                <TextBlock
+                                                    Margin="0,5,0,0"
+                                                    HorizontalAlignment="Center"
+                                                    FontSize="11"
+                                                    Foreground="{StaticResource TextSecondaryBrush}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="已关闭" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsEnabled}" Value="True">
+                                                                    <Setter Property="Text" Value="已开启" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+
+                                            <Button
+                                                Grid.Column="5"
+                                                VerticalAlignment="Top"
+                                                Command="{Binding DeleteCommand}"
+                                                Content="删除"
+                                                Style="{StaticResource DangerButtonStyle}" />
+                                        </Grid>
+
+                                        <Border
+                                            Grid.Row="1"
+                                            Padding="18,14"
+                                            Background="{StaticResource SurfaceSubtleBrush}"
+                                            BorderBrush="{StaticResource BorderBrush}"
+                                            BorderThickness="0,1,0,0">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="22" />
+                                                    <ColumnDefinition Width="360" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <Border
+                                                    Grid.Column="0"
+                                                    Padding="12,7"
+                                                    VerticalAlignment="Top"
+                                                    Background="{StaticResource PrimarySubtleBrush}"
+                                                    CornerRadius="7">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Ellipse
+                                                            Width="7"
+                                                            Height="7"
+                                                            Margin="0,0,7,0"
+                                                            VerticalAlignment="Center"
+                                                            Fill="{StaticResource PrimaryBrush}" />
+                                                        <TextBlock
+                                                            FontSize="13"
+                                                            FontWeight="SemiBold"
+                                                            Foreground="{StaticResource PrimaryBrush}"
+                                                            Text="固定时间事件" />
+                                                    </StackPanel>
+                                                </Border>
+
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock
+                                                        Margin="0,0,0,6"
+                                                        FontSize="11"
+                                                        Foreground="{StaticResource TextMutedBrush}"
+                                                        Text="提醒时间间隔" />
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBox
+                                                            Width="150"
+                                                            MaxLength="10"
+                                                            AutomationProperties.Name="提醒间隔分钟"
+                                                            KeyDown="EditableTextBox_OnKeyDown"
+                                                            LostKeyboardFocus="EditableTextBox_OnLostKeyboardFocus"
+                                                            Tag="Interval"
+                                                            Text="{Binding IntervalInput, UpdateSourceTrigger=PropertyChanged}">
+                                                            <TextBox.Style>
+                                                                <Style TargetType="TextBox" BasedOn="{StaticResource InputTextBoxStyle}">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding HasIntervalError}" Value="True">
+                                                                            <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBox.Style>
+                                                        </TextBox>
+                                                        <TextBlock
+                                                            Margin="9,0,0,0"
+                                                            VerticalAlignment="Center"
+                                                            FontSize="13"
+                                                            Foreground="{StaticResource TextSecondaryBrush}"
+                                                            Text="分钟" />
+                                                    </StackPanel>
+                                                    <TextBlock
+                                                        Margin="2,5,0,0"
+                                                        FontSize="12"
+                                                        Foreground="{StaticResource DangerBrush}"
+                                                        Text="{Binding IntervalError}"
+                                                        Visibility="{Binding HasIntervalError, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                </StackPanel>
+
+                                                <TextBlock
+                                                    Grid.Column="3"
+                                                    Margin="24,17,0,0"
+                                                    VerticalAlignment="Top"
+                                                    FontSize="12"
+                                                    Foreground="{StaticResource TextMutedBrush}"
+                                                    Text="按 Enter 或离开输入框后应用修改"
+                                                    TextWrapping="Wrap" />
+                                            </Grid>
+                                        </Border>
+                                    </Grid>
+                                </ScrollViewer>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+
+        <Border
+            Grid.Row="2"
+            Padding="28,11"
+            Background="{StaticResource SurfaceBrush}"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="0,1,0,0">
+            <TextBlock
+                HorizontalAlignment="Center"
+                FontSize="12"
+                Foreground="{StaticResource TextSecondaryBrush}"
+                Text="{Binding BackgroundHint}" />
+        </Border>
+    </Grid>
+</Window>
