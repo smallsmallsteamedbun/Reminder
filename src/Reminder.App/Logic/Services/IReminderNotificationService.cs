@@ -10,5 +10,7 @@ public interface IReminderNotificationService : IDisposable
 
     bool Show(ReminderNotificationRequest request);
 
+    bool ShowMissedEvents(IReadOnlyList<string> eventNames);
+
     void Remove(Guid notificationId);
 }

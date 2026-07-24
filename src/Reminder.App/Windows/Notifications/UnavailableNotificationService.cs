@@ -19,6 +19,11 @@ public sealed class UnavailableNotificationService(string reason) : IReminderNot
         return false;
     }
 
+    public bool ShowMissedEvents(IReadOnlyList<string> eventNames)
+    {
+        return false;
+    }
+
     public void Remove(Guid notificationId)
     {
     }

@@ -74,6 +74,39 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
         }
     }
 
+    public bool ShowMissedEvents(IReadOnlyList<string> eventNames)
+    {
+        if (_disposed || eventNames.Count == 0)
+        {
+            return false;
+        }
+
+        try
+        {
+            var content = new ToastContentBuilder()
+                .AddText("Reminder · 已跳过")
+                .AddText(string.Join("、", eventNames))
+                .AddText("这些事件的计划时间已经过去。")
+                .SetToastDuration(ToastDuration.Long)
+                .GetToastContent();
+
+            var toast = new ToastNotification(content.GetXml())
+            {
+                Group = ToastGroup
+            };
+            ToastNotificationManagerCompat.CreateToastNotifier().Show(toast);
+            _isAvailable = true;
+            _statusMessage = "Windows 通知已就绪";
+            return true;
+        }
+        catch (Exception exception)
+        {
+            _isAvailable = false;
+            _statusMessage = $"已跳过通知暂不可用：{exception.Message}";
+            return false;
+        }
+    }
+
     public void Remove(Guid notificationId)
     {
         if (!_notifications.TryRemove(notificationId, out var tracked))

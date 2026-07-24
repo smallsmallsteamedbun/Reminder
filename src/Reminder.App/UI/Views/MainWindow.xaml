@@ -172,28 +172,30 @@
                                     HorizontalScrollBarVisibility="Auto"
                                     PanningMode="HorizontalOnly"
                                     VerticalScrollBarVisibility="Disabled">
-                                    <Grid MinWidth="1000">
+                                    <Grid MinWidth="1072">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
 
-                                        <Grid Grid.Row="0" Margin="18,17,18,15">
+                                        <Grid Grid.Row="0" Margin="14,14,14,12">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="2.4*" MinWidth="230" />
-                                                <ColumnDefinition Width="94" />
-                                                <ColumnDefinition Width="94" />
-                                                <ColumnDefinition Width="190" />
-                                                <ColumnDefinition Width="112" />
-                                                <ColumnDefinition Width="86" />
+                                                <ColumnDefinition Width="410" />
+                                                <ColumnDefinition Width="78" />
+                                                <ColumnDefinition Width="78" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="96" />
+                                                <ColumnDefinition Width="74" />
                                             </Grid.ColumnDefinitions>
 
-                                            <StackPanel Grid.Column="0" Margin="0,0,18,0">
+                                            <StackPanel Grid.Column="0" Margin="0,0,12,0">
                                                 <TextBox
-                                                    MaxLength="40"
+                                                    MaxLength="50"
                                                     AutomationProperties.Name="事件名称"
+                                                    DataObject.Pasting="EventNameTextBox_OnPasting"
                                                     KeyDown="EditableTextBox_OnKeyDown"
                                                     LostKeyboardFocus="EditableTextBox_OnLostKeyboardFocus"
+                                                    PreviewTextInput="EventNameTextBox_OnPreviewTextInput"
                                                     Tag="Name"
                                                     Text="{Binding NameInput, UpdateSourceTrigger=PropertyChanged}">
                                                     <TextBox.Style>
@@ -212,6 +214,9 @@
                                                             <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
                                                             <Setter Property="Text" Value="{Binding StatusText}" />
                                                             <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding StatusText}" Value="运行中">
+                                                                    <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                                                                </DataTrigger>
                                                                 <DataTrigger Binding="{Binding HasNameError}" Value="True">
                                                                     <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
                                                                     <Setter Property="Text" Value="{Binding NameError}" />
@@ -229,7 +234,8 @@
                                                 Command="{Binding PauseCommand}"
                                                 Content="{Binding PauseButtonText}"
                                                 IsEnabled="{Binding CanPauseOrResume}"
-                                                Style="{StaticResource ReminderButtonStyle}" />
+                                                Style="{StaticResource ReminderButtonStyle}"
+                                                Visibility="{Binding ShowPauseButton, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                             <Button
                                                 Grid.Column="2"
                                                 Margin="0,0,8,0"
@@ -237,13 +243,17 @@
                                                 Command="{Binding RestartCommand}"
                                                 Content="重启"
                                                 IsEnabled="{Binding CanRestart}"
-                                                Style="{StaticResource ReminderButtonStyle}" />
+                                                Style="{StaticResource ReminderButtonStyle}"
+                                                Visibility="{Binding ShowRestartButton, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
-                                            <StackPanel Grid.Column="3" Margin="4,1,12,0">
+                                            <StackPanel
+                                                Grid.Column="{Binding CountdownColumn}"
+                                                Grid.ColumnSpan="{Binding CountdownColumnSpan}"
+                                                Margin="4,1,12,0">
                                                 <TextBlock
                                                     FontSize="11"
                                                     Foreground="{StaticResource TextMutedBrush}"
-                                                    Text="距离下次提醒" />
+                                                    Text="{Binding CountdownLabel}" />
                                                 <TextBlock
                                                     Margin="0,5,0,0"
                                                     FontSize="17"
@@ -288,87 +298,315 @@
 
                                         <Border
                                             Grid.Row="1"
-                                            Padding="18,14"
+                                            Padding="14,12"
                                             Background="{StaticResource SurfaceSubtleBrush}"
                                             BorderBrush="{StaticResource BorderBrush}"
                                             BorderThickness="0,1,0,0">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="22" />
-                                                    <ColumnDefinition Width="360" />
-                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="196" />
+                                                    <ColumnDefinition Width="14" />
+                                                    <ColumnDefinition Width="536" />
+                                                    <ColumnDefinition Width="14" />
+                                                    <ColumnDefinition Width="108" />
+                                                    <ColumnDefinition Width="14" />
+                                                    <ColumnDefinition Width="182" />
                                                 </Grid.ColumnDefinitions>
 
-                                                <Border
-                                                    Grid.Column="0"
-                                                    Padding="12,7"
-                                                    VerticalAlignment="Top"
-                                                    Background="{StaticResource PrimarySubtleBrush}"
-                                                    CornerRadius="7">
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <Ellipse
-                                                            Width="7"
-                                                            Height="7"
-                                                            Margin="0,0,7,0"
-                                                            VerticalAlignment="Center"
-                                                            Fill="{StaticResource PrimaryBrush}" />
-                                                        <TextBlock
-                                                            FontSize="13"
-                                                            FontWeight="SemiBold"
-                                                            Foreground="{StaticResource PrimaryBrush}"
-                                                            Text="固定时间事件" />
-                                                    </StackPanel>
-                                                </Border>
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock
+                                                        Margin="0,0,0,7"
+                                                        FontSize="11"
+                                                        Foreground="{StaticResource TextMutedBrush}"
+                                                        Text="事件类型" />
+                                                    <Border
+                                                        Background="{StaticResource SurfaceBrush}"
+                                                        BorderBrush="{StaticResource BorderStrongBrush}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="9">
+                                                        <UniformGrid Columns="2">
+                                                            <RadioButton
+                                                                AutomationProperties.Name="固定时间事件"
+                                                                Content="固定时间事件"
+                                                                GroupName="{Binding Id}"
+                                                                IsChecked="{Binding IsFixedInterval, Mode=TwoWay}"
+                                                                Style="{StaticResource SegmentedChoiceStyle}" />
+                                                            <RadioButton
+                                                                AutomationProperties.Name="指定时间事件"
+                                                                Content="指定时间事件"
+                                                                GroupName="{Binding Id}"
+                                                                IsChecked="{Binding IsScheduledTime, Mode=TwoWay}"
+                                                                Style="{StaticResource SegmentedChoiceStyle}" />
+                                                        </UniformGrid>
+                                                    </Border>
+                                                    <TextBlock
+                                                        Margin="0,9,0,0"
+                                                        FontSize="12"
+                                                        Foreground="{StaticResource TextSecondaryBrush}"
+                                                        Text="{Binding ScheduleSummary}"
+                                                        TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
 
-                                                <StackPanel Grid.Column="2">
+                                                <Grid Grid.Column="2">
+                                                    <StackPanel Visibility="{Binding IsFixedInterval, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                        <TextBlock
+                                                            Margin="0,0,0,6"
+                                                            FontSize="11"
+                                                            Foreground="{StaticResource TextMutedBrush}"
+                                                            Text="提醒时间间隔" />
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBox
+                                                                Width="112"
+                                                                MaxLength="10"
+                                                                AutomationProperties.Name="提醒间隔分钟"
+                                                                KeyDown="EditableTextBox_OnKeyDown"
+                                                                LostKeyboardFocus="EditableTextBox_OnLostKeyboardFocus"
+                                                                Tag="Interval"
+                                                                Text="{Binding IntervalInput, UpdateSourceTrigger=PropertyChanged}">
+                                                                <TextBox.Style>
+                                                                    <Style TargetType="TextBox" BasedOn="{StaticResource InputTextBoxStyle}">
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding HasIntervalError}" Value="True">
+                                                                                <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBox.Style>
+                                                            </TextBox>
+                                                            <TextBlock
+                                                                Margin="9,0,0,0"
+                                                                VerticalAlignment="Center"
+                                                                FontSize="13"
+                                                                Foreground="{StaticResource TextSecondaryBrush}"
+                                                                Text="分钟" />
+                                                        </StackPanel>
+                                                        <TextBlock
+                                                            Margin="2,5,0,0"
+                                                            FontSize="12"
+                                                            Foreground="{StaticResource DangerBrush}"
+                                                            Text="{Binding IntervalError}"
+                                                            Visibility="{Binding HasIntervalError, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                    </StackPanel>
+
+                                                    <StackPanel Visibility="{Binding IsScheduledTime, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="82" />
+                                                                <ColumnDefinition Width="8" />
+                                                                <ColumnDefinition Width="92" />
+                                                                <ColumnDefinition Width="8" />
+                                                                <ColumnDefinition Width="*" />
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <StackPanel Grid.Column="0">
+                                                                <TextBlock
+                                                                    Margin="0,0,0,6"
+                                                                    FontSize="11"
+                                                                    Foreground="{StaticResource TextMutedBrush}"
+                                                                    Text="频率" />
+                                                                <ComboBox
+                                                                    Width="82"
+                                                                    AutomationProperties.Name="指定时间频率"
+                                                                    DisplayMemberPath="Label"
+                                                                    ItemsSource="{Binding RecurrenceChoices}"
+                                                                    SelectedItem="{Binding SelectedRecurrenceChoice, Mode=TwoWay}"
+                                                                    Style="{StaticResource InputComboBoxStyle}" />
+                                                            </StackPanel>
+
+                                                            <Grid Grid.Column="2">
+                                                                <StackPanel Visibility="{Binding ShowWeeklyFields, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                    <TextBlock
+                                                                        Margin="0,0,0,6"
+                                                                        FontSize="11"
+                                                                        Foreground="{StaticResource TextMutedBrush}"
+                                                                        Text="星期" />
+                                                                    <ComboBox
+                                                                        Width="92"
+                                                                        AutomationProperties.Name="每周提醒星期"
+                                                                        DisplayMemberPath="Label"
+                                                                        ItemsSource="{Binding WeekdayChoices}"
+                                                                        SelectedItem="{Binding SelectedWeekdayChoice, Mode=TwoWay}"
+                                                                        Style="{StaticResource InputComboBoxStyle}" />
+                                                                </StackPanel>
+                                                            </Grid>
+
+                                                            <StackPanel Grid.Column="4">
+                                                                <TextBlock
+                                                                    Margin="0,0,0,6"
+                                                                    FontSize="11"
+                                                                    Foreground="{StaticResource TextMutedBrush}"
+                                                                    Text="指定日期和时间" />
+                                                                <Grid>
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="82" />
+                                                                        <ColumnDefinition Width="66" />
+                                                                        <ColumnDefinition Width="66" />
+                                                                        <ColumnDefinition Width="66" />
+                                                                        <ColumnDefinition Width="66" />
+                                                                    </Grid.ColumnDefinitions>
+
+                                                                    <StackPanel
+                                                                        Grid.Column="0"
+                                                                        Orientation="Horizontal"
+                                                                        Visibility="{Binding ShowYearField, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                        <TextBox
+                                                                            Width="64"
+                                                                            MaxLength="4"
+                                                                            AutomationProperties.Name="提醒年份"
+                                                                            KeyDown="EditableTextBox_OnKeyDown"
+                                                                            LostKeyboardFocus="EditableTextBox_OnLostKeyboardFocus"
+                                                                            Tag="SchedulePart"
+                                                                            Text="{Binding YearInput, UpdateSourceTrigger=PropertyChanged}"
+                                                                            Style="{StaticResource SchedulePartInputStyle}" />
+                                                                        <TextBlock
+                                                                            Margin="3,0,0,0"
+                                                                            VerticalAlignment="Center"
+                                                                            FontSize="13"
+                                                                            Text="年" />
+                                                                    </StackPanel>
+                                                                    <StackPanel
+                                                                        Grid.Column="1"
+                                                                        Orientation="Horizontal"
+                                                                        Visibility="{Binding ShowMonthField, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                        <TextBox
+                                                                            Width="48"
+                                                                            MaxLength="2"
+                                                                            AutomationProperties.Name="提醒月份"
+                                                                            KeyDown="EditableTextBox_OnKeyDown"
+                                                                            LostKeyboardFocus="EditableTextBox_OnLostKeyboardFocus"
+                                                                            Tag="SchedulePart"
+                                                                            Text="{Binding MonthInput, UpdateSourceTrigger=PropertyChanged}"
+                                                                            Style="{StaticResource SchedulePartInputStyle}" />
+                                                                        <TextBlock
+                                                                            Margin="3,0,0,0"
+                                                                            VerticalAlignment="Center"
+                                                                            FontSize="13"
+                                                                            Text="月" />
+                                                                    </StackPanel>
+                                                                    <StackPanel
+                                                                        Grid.Column="2"
+                                                                        Orientation="Horizontal"
+                                                                        Visibility="{Binding ShowDayField, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                        <TextBox
+                                                                            Width="48"
+                                                                            MaxLength="2"
+                                                                            AutomationProperties.Name="提醒日期"
+                                                                            KeyDown="EditableTextBox_OnKeyDown"
+                                                                            LostKeyboardFocus="EditableTextBox_OnLostKeyboardFocus"
+                                                                            Tag="SchedulePart"
+                                                                            Text="{Binding DayInput, UpdateSourceTrigger=PropertyChanged}"
+                                                                            Style="{StaticResource SchedulePartInputStyle}" />
+                                                                        <TextBlock
+                                                                            Margin="3,0,0,0"
+                                                                            VerticalAlignment="Center"
+                                                                            FontSize="13"
+                                                                            Text="日" />
+                                                                    </StackPanel>
+                                                                    <StackPanel
+                                                                        Grid.Column="3"
+                                                                        Orientation="Horizontal"
+                                                                        Visibility="{Binding ShowTimeFields, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                        <TextBox
+                                                                            Width="48"
+                                                                            MaxLength="2"
+                                                                            AutomationProperties.Name="提醒小时"
+                                                                            KeyDown="EditableTextBox_OnKeyDown"
+                                                                            LostKeyboardFocus="EditableTextBox_OnLostKeyboardFocus"
+                                                                            Tag="SchedulePart"
+                                                                            Text="{Binding HourInput, UpdateSourceTrigger=PropertyChanged}"
+                                                                            Style="{StaticResource SchedulePartInputStyle}" />
+                                                                        <TextBlock
+                                                                            Margin="3,0,0,0"
+                                                                            VerticalAlignment="Center"
+                                                                            FontSize="13"
+                                                                            Text="时" />
+                                                                    </StackPanel>
+                                                                    <StackPanel
+                                                                        Grid.Column="4"
+                                                                        Orientation="Horizontal"
+                                                                        Visibility="{Binding ShowTimeFields, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                        <TextBox
+                                                                            Width="48"
+                                                                            MaxLength="2"
+                                                                            AutomationProperties.Name="提醒分钟"
+                                                                            KeyDown="EditableTextBox_OnKeyDown"
+                                                                            LostKeyboardFocus="EditableTextBox_OnLostKeyboardFocus"
+                                                                            Tag="SchedulePart"
+                                                                            Text="{Binding MinuteInput, UpdateSourceTrigger=PropertyChanged}"
+                                                                            Style="{StaticResource SchedulePartInputStyle}" />
+                                                                        <TextBlock
+                                                                            Margin="3,0,0,0"
+                                                                            VerticalAlignment="Center"
+                                                                            FontSize="13"
+                                                                            Text="分" />
+                                                                    </StackPanel>
+                                                                </Grid>
+                                                            </StackPanel>
+                                                        </Grid>
+
+                                                        <TextBlock
+                                                            Margin="2,5,0,0"
+                                                            FontSize="12"
+                                                            Foreground="{StaticResource DangerBrush}"
+                                                            Text="{Binding ScheduleError}"
+                                                            Visibility="{Binding HasScheduleError, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                    </StackPanel>
+                                                </Grid>
+
+                                                <StackPanel
+                                                    Grid.Column="4"
+                                                    Visibility="{Binding ShowTermination, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                     <TextBlock
                                                         Margin="0,0,0,6"
                                                         FontSize="11"
                                                         Foreground="{StaticResource TextMutedBrush}"
-                                                        Text="提醒时间间隔" />
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <TextBox
-                                                            Width="150"
-                                                            MaxLength="10"
-                                                            AutomationProperties.Name="提醒间隔分钟"
-                                                            KeyDown="EditableTextBox_OnKeyDown"
-                                                            LostKeyboardFocus="EditableTextBox_OnLostKeyboardFocus"
-                                                            Tag="Interval"
-                                                            Text="{Binding IntervalInput, UpdateSourceTrigger=PropertyChanged}">
-                                                            <TextBox.Style>
-                                                                <Style TargetType="TextBox" BasedOn="{StaticResource InputTextBoxStyle}">
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding HasIntervalError}" Value="True">
-                                                                            <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}" />
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </TextBox.Style>
-                                                        </TextBox>
-                                                        <TextBlock
-                                                            Margin="9,0,0,0"
-                                                            VerticalAlignment="Center"
-                                                            FontSize="13"
-                                                            Foreground="{StaticResource TextSecondaryBrush}"
-                                                            Text="分钟" />
-                                                    </StackPanel>
-                                                    <TextBlock
-                                                        Margin="2,5,0,0"
-                                                        FontSize="12"
-                                                        Foreground="{StaticResource DangerBrush}"
-                                                        Text="{Binding IntervalError}"
-                                                        Visibility="{Binding HasIntervalError, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                        Text="终止次数" />
+                                                    <ComboBox
+                                                        Width="104"
+                                                        HorizontalAlignment="Left"
+                                                        AutomationProperties.Name="终止次数"
+                                                        DisplayMemberPath="Label"
+                                                        ItemsSource="{Binding TerminationChoices}"
+                                                        MaxDropDownHeight="260"
+                                                        SelectedItem="{Binding SelectedTerminationChoice, Mode=TwoWay}"
+                                                        Style="{StaticResource InputComboBoxStyle}" />
                                                 </StackPanel>
 
-                                                <TextBlock
-                                                    Grid.Column="3"
-                                                    Margin="24,17,0,0"
-                                                    VerticalAlignment="Top"
-                                                    FontSize="12"
-                                                    Foreground="{StaticResource TextMutedBrush}"
-                                                    Text="按 Enter 或离开输入框后应用修改"
-                                                    TextWrapping="Wrap" />
+                                                <StackPanel Grid.Column="6">
+                                                    <TextBlock
+                                                        Margin="0,0,0,6"
+                                                        FontSize="11"
+                                                        Foreground="{StaticResource TextMutedBrush}"
+                                                        Text="息屏和锁屏" />
+
+                                                    <StackPanel Visibility="{Binding IsFixedInterval, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                        <ComboBox
+                                                            Width="178"
+                                                            HorizontalAlignment="Left"
+                                                            AutomationProperties.Name="固定时间事件息屏和锁屏策略"
+                                                            ItemsSource="{Binding FixedSystemPolicyChoices}"
+                                                            SelectedItem="{Binding SelectedFixedSystemPolicy, Mode=TwoWay}"
+                                                            Style="{StaticResource InputComboBoxStyle}" />
+                                                        <ComboBox
+                                                            Width="178"
+                                                            Margin="0,6,0,0"
+                                                            HorizontalAlignment="Left"
+                                                            AutomationProperties.Name="固定时间事件息屏和锁屏期间是否提醒"
+                                                            ItemsSource="{Binding SystemNotificationChoices}"
+                                                            SelectedItem="{Binding SelectedFixedSystemNotification, Mode=TwoWay}"
+                                                            Style="{StaticResource InputComboBoxStyle}"
+                                                            Visibility="{Binding ShowFixedSystemNotificationChoice, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                    </StackPanel>
+
+                                                    <ComboBox
+                                                        Width="178"
+                                                        HorizontalAlignment="Left"
+                                                        AutomationProperties.Name="指定时间事件息屏和锁屏期间是否提醒"
+                                                        ItemsSource="{Binding SystemNotificationChoices}"
+                                                        SelectedItem="{Binding SelectedScheduledSystemNotification, Mode=TwoWay}"
+                                                        Style="{StaticResource InputComboBoxStyle}"
+                                                        Visibility="{Binding IsScheduledTime, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                </StackPanel>
                                             </Grid>
                                         </Border>
                                     </Grid>
@@ -382,15 +620,9 @@
 
         <Border
             Grid.Row="2"
-            Padding="28,11"
+            Height="7"
             Background="{StaticResource SurfaceBrush}"
             BorderBrush="{StaticResource BorderBrush}"
-            BorderThickness="0,1,0,0">
-            <TextBlock
-                HorizontalAlignment="Center"
-                FontSize="12"
-                Foreground="{StaticResource TextSecondaryBrush}"
-                Text="{Binding BackgroundHint}" />
-        </Border>
+            BorderThickness="0,1,0,0" />
     </Grid>
 </Window>

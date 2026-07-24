@@ -6,7 +6,9 @@ internal sealed class ReminderEvent
 
     public required string Name { get; set; }
 
-    public required TimeSpan Interval { get; set; }
+    public required ReminderSchedule Schedule { get; set; }
+
+    public required ReminderTermination Termination { get; init; }
 
     public bool IsEnabled { get; set; }
 
@@ -21,4 +23,10 @@ internal sealed class ReminderEvent
     public bool IsNotificationDeferred { get; set; }
 
     public DateTimeOffset? NotificationShownAt { get; set; }
+
+    public DateTimeOffset? ActiveOccurrenceAt { get; set; }
+
+    public bool IsExpired { get; set; }
+
+    public bool ShowExpiredEasterEgg { get; set; }
 }

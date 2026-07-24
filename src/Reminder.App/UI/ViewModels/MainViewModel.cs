@@ -32,8 +32,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public string NotificationStatus => _engine.NotificationStatus;
 
-    public string BackgroundHint => "关闭窗口后仍会在后台计时，可双击系统托盘图标重新打开";
-
     public event Action<Guid>? EventAdded;
 
     public event Action<EventViewModel>? DeleteRequested;

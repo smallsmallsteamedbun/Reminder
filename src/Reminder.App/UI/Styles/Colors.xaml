@@ -20,7 +20,7 @@
     <Color x:Key="DangerHoverColor">#B5404C</Color>
     <Color x:Key="DangerPressedColor">#9F3541</Color>
     <Color x:Key="DangerSubtleColor">#FBECEF</Color>
-    <Color x:Key="SuccessColor">#3E8A67</Color>
+    <Color x:Key="SuccessColor">#3FAE78</Color>
 
     <SolidColorBrush x:Key="PageBackgroundBrush" Color="{StaticResource PageBackgroundColor}" />
     <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />

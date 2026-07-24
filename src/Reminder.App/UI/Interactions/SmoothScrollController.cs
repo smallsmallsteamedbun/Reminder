@@ -72,6 +72,18 @@ public sealed class SmoothScrollController : IDisposable
         StopAnimation(invokeCompletion: false);
     }
 
+    public void CompleteImmediately(bool invokeCompletion = false)
+    {
+        ThrowIfDisposed();
+        if (_isAnimating)
+        {
+            _scrollViewer.ScrollToVerticalOffset(
+                ClampOffset(_targetOffset));
+        }
+
+        StopAnimation(invokeCompletion);
+    }
+
     private void AnimateTo(double targetOffset, Action? completed = null)
     {
         _targetOffset = ClampOffset(targetOffset);
@@ -109,7 +121,11 @@ public sealed class SmoothScrollController : IDisposable
         var now = Stopwatch.GetTimestamp();
         var elapsed = Stopwatch.GetElapsedTime(_lastFrameTimestamp, now);
         _lastFrameTimestamp = now;
-        var deltaSeconds = Math.Clamp(elapsed.TotalSeconds, 1.0 / 240, 1.0 / 30);
+        var deltaSeconds = Math.Min(elapsed.TotalSeconds, 1.0 / 30);
+        if (deltaSeconds <= 0)
+        {
+            return;
+        }
 
         _targetOffset = ClampOffset(_targetOffset);
         var current = _scrollViewer.VerticalOffset;

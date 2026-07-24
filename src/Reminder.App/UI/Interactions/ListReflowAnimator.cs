@@ -65,7 +65,6 @@ public sealed class ListReflowAnimator : IDisposable
             },
             FillBehavior = FillBehavior.HoldEnd
         };
-        UiMotion.LimitFrameRate(fade);
         fade.Completed += (_, _) => CompleteFadeAndStartReflow(
             generation,
             target);
@@ -195,7 +194,6 @@ public sealed class ListReflowAnimator : IDisposable
                 },
                 FillBehavior = FillBehavior.Stop
             };
-            UiMotion.LimitFrameRate(reflow);
             reflow.Completed += (_, _) => CompleteReflowAnimation(
                 generation,
                 activeTransform);
