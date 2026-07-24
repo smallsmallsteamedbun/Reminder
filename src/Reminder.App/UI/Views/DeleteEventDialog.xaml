@@ -1,0 +1,105 @@
+<Window
+    x:Class="Reminder.App.UI.Views.DeleteEventDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="删除事件"
+    Width="430"
+    AllowsTransparency="True"
+    AutomationProperties.AutomationId="DeleteEventDialog"
+    Background="Transparent"
+    KeyDown="Window_OnKeyDown"
+    ResizeMode="NoResize"
+    ShowInTaskbar="False"
+    SizeToContent="Height"
+    WindowStartupLocation="CenterOwner"
+    WindowStyle="None">
+
+    <Border
+        Margin="20"
+        Padding="24"
+        Background="{StaticResource SurfaceBrush}"
+        BorderBrush="{StaticResource BorderStrongBrush}"
+        BorderThickness="1"
+        CornerRadius="12">
+        <Border.Effect>
+            <DropShadowEffect
+                BlurRadius="24"
+                Direction="270"
+                Opacity="0.2"
+                ShadowDepth="6"
+                Color="#42000000" />
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="42" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border
+                    Width="34"
+                    Height="34"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Background="{StaticResource DangerSubtleBrush}"
+                    CornerRadius="17">
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontSize="18"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource DangerBrush}"
+                        Text="!" />
+                </Border>
+
+                <StackPanel Grid.Column="1">
+                    <TextBlock
+                        FontSize="19"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource TextPrimaryBrush}"
+                        Text="是否删除事件" />
+                    <TextBlock
+                        x:Name="EventNameText"
+                        Margin="0,9,0,0"
+                        FontSize="13"
+                        Foreground="{StaticResource TextSecondaryBrush}"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </Grid>
+
+            <Border
+                Grid.Row="1"
+                Height="1"
+                Margin="0,22,0,18"
+                Background="{StaticResource BorderBrush}" />
+
+            <StackPanel
+                Grid.Row="2"
+                HorizontalAlignment="Right"
+                Orientation="Horizontal">
+                <Button
+                    MinWidth="84"
+                    AutomationProperties.AutomationId="CancelDeleteButton"
+                    Click="CancelButton_OnClick"
+                    Content="取消"
+                    IsCancel="True"
+                    Style="{StaticResource ReminderButtonStyle}" />
+                <Button
+                    MinWidth="84"
+                    Margin="10,0,0,0"
+                    AutomationProperties.AutomationId="ConfirmDeleteButton"
+                    Click="ConfirmButton_OnClick"
+                    Content="确定"
+                    IsDefault="True"
+                    Style="{StaticResource DangerFilledButtonStyle}" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

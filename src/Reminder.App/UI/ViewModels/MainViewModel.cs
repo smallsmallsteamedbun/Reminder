@@ -36,6 +36,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public event Action<Guid>? EventAdded;
 
+    public event Action<EventViewModel>? DeleteRequested;
+
     public ObservableCollection<EventViewModel> Events { get; } = [];
 
     public RelayCommand AddEventCommand { get; }
@@ -79,7 +81,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             var viewModel = Events.FirstOrDefault(item => item.Id == snapshot.Id);
             if (viewModel is null)
             {
-                viewModel = new EventViewModel(_engine, snapshot);
+                viewModel = new EventViewModel(
+                    _engine,
+                    snapshot,
+                    eventViewModel => DeleteRequested?.Invoke(eventViewModel));
                 Events.Add(viewModel);
             }
             else
@@ -111,6 +116,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         var eventId = _engine.AddDefaultEvent();
         Refresh();
         EventAdded?.Invoke(eventId);
+    }
+
+    public void ConfirmDelete(Guid eventId)
+    {
+        _engine.Delete(eventId);
+        Refresh();
     }
 
     private void OnEngineStateChanged(object? sender, EventArgs e)

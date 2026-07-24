@@ -21,7 +21,10 @@ public sealed class EventViewModel : ObservableObject
     private bool _isHighlighted;
     private bool _synchronizing;
 
-    public EventViewModel(ReminderEngine engine, ReminderEventSnapshot snapshot)
+    public EventViewModel(
+        ReminderEngine engine,
+        ReminderEventSnapshot snapshot,
+        Action<EventViewModel> deleteRequested)
     {
         _engine = engine;
         _snapshot = snapshot;
@@ -34,7 +37,7 @@ public sealed class EventViewModel : ObservableObject
         RestartCommand = new RelayCommand(
             () => _engine.Restart(Id),
             () => CanRestart);
-        DeleteCommand = new RelayCommand(() => _engine.Delete(Id));
+        DeleteCommand = new RelayCommand(() => deleteRequested(this));
 
         ApplySnapshot(snapshot);
     }

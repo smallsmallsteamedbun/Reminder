@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Reminder.App.SystemModule.Runtime;
+using Reminder.App.UI.Interactions;
 using Reminder.App.UI.ViewModels;
 
 namespace Reminder.App.UI.Views;
@@ -13,6 +14,8 @@ public partial class MainWindow : Window
     private readonly MainViewModel _viewModel;
     private readonly DispatcherTimer _countdownRefreshTimer;
     private readonly DispatcherTimer _newEventHighlightTimer;
+    private readonly SmoothScrollController _eventListScroller;
+    private readonly ListReflowAnimator _eventListReflowAnimator;
     private EventViewModel? _highlightedEvent;
 
     public MainWindow(MainViewModel viewModel)
@@ -20,6 +23,11 @@ public partial class MainWindow : Window
         _viewModel = viewModel;
         DataContext = viewModel;
         InitializeComponent();
+
+        _eventListScroller = new SmoothScrollController(EventListScrollViewer);
+        _eventListReflowAnimator = new ListReflowAnimator(
+            EventItemsControl,
+            EventListScrollViewer);
 
         _countdownRefreshTimer = new DispatcherTimer(
             TimeSpan.FromSeconds(1),
@@ -34,6 +42,7 @@ public partial class MainWindow : Window
             Dispatcher);
 
         _viewModel.EventAdded += OnEventAdded;
+        _viewModel.DeleteRequested += OnDeleteRequested;
 
         Loaded += (_, _) => StartUiRefresh();
         IsVisibleChanged += (_, _) =>
@@ -45,6 +54,7 @@ public partial class MainWindow : Window
             else
             {
                 _countdownRefreshTimer.Stop();
+                _eventListReflowAnimator.CompleteImmediately();
                 Dispatcher.BeginInvoke(
                     ProcessMemoryTrimmer.TrimAfterWindowHidden,
                     DispatcherPriority.ApplicationIdle);
@@ -118,11 +128,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var targetOffset = Math.Clamp(
-            scrollViewer.VerticalOffset - e.Delta,
-            0,
-            scrollViewer.ScrollableHeight);
-        scrollViewer.ScrollToVerticalOffset(targetOffset);
+        _eventListScroller.ScrollBy(-e.Delta);
         e.Handled = true;
     }
 
@@ -133,6 +139,31 @@ public partial class MainWindow : Window
             DispatcherPriority.Loaded);
     }
 
+    private void OnDeleteRequested(EventViewModel eventViewModel)
+    {
+        var eventName = string.IsNullOrWhiteSpace(eventViewModel.NameInput)
+            ? "未命名事件"
+            : eventViewModel.NameInput.Trim();
+        var dialog = new DeleteEventDialog(eventName)
+        {
+            Owner = this
+        };
+
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        if (ReferenceEquals(_highlightedEvent, eventViewModel))
+        {
+            ClearNewEventHighlight();
+        }
+
+        _eventListReflowAnimator.DeleteWithReflow(
+            eventViewModel,
+            () => _viewModel.ConfirmDelete(eventViewModel.Id));
+    }
+
     private void RevealAndHighlightEvent(Guid eventId)
     {
         var eventViewModel = _viewModel.Events.FirstOrDefault(item => item.Id == eventId);
@@ -141,24 +172,26 @@ public partial class MainWindow : Window
             return;
         }
 
-        ClearNewEventHighlight();
-        _highlightedEvent = eventViewModel;
-        eventViewModel.SetHighlighted(true);
-
         UpdateLayout();
         if (EventItemsControl.ItemContainerGenerator.ContainerFromItem(eventViewModel)
             is FrameworkElement container)
         {
-            var top = container.TranslatePoint(
-                new System.Windows.Point(0, 0),
-                EventListScrollViewer).Y;
-            var bottom = top + container.ActualHeight;
-            if (top < 0 || bottom > EventListScrollViewer.ViewportHeight)
-            {
-                container.BringIntoView();
-            }
+            ClearNewEventHighlight();
+            _eventListScroller.ScrollToReveal(
+                container,
+                viewportPadding: 12,
+                () => StartNewEventHighlight(eventViewModel));
+            return;
         }
 
+        StartNewEventHighlight(eventViewModel);
+    }
+
+    private void StartNewEventHighlight(EventViewModel eventViewModel)
+    {
+        ClearNewEventHighlight();
+        _highlightedEvent = eventViewModel;
+        eventViewModel.SetHighlighted(true);
         _newEventHighlightTimer.Start();
     }
 

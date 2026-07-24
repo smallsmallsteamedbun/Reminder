@@ -38,7 +38,7 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
             var content = new ToastContentBuilder()
                 .AddArgument("eventId", request.EventId.ToString("N"))
                 .AddArgument("notificationId", request.NotificationId.ToString("N"))
-                .AddArgument("action", "skip")
+                .AddArgument("action", "reopen")
                 .AddText("Reminder")
                 .AddText($"该休息一下了：{request.EventName}")
                 .AddText("可以直接在这里处理本次提醒。")
@@ -51,7 +51,7 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
             var contentXml = content.GetXml();
             var tracked = new TrackedNotification(request, tag, contentXml.GetXml());
             _notifications[request.NotificationId] = tracked;
-            tracked.StartAutoDismiss(
+            tracked.RestartAutoDismiss(
                 request.VisibleDuration,
                 () => AutoDismiss(request.NotificationId));
 
@@ -136,6 +136,12 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
         }
 
         toastArguments.TryGetValue("action", out var actionText);
+        if (string.Equals(actionText, "reopen", StringComparison.Ordinal))
+        {
+            Reopen(tracked);
+            return;
+        }
+
         var action = actionText switch
         {
             "complete" => ReminderNotificationAction.Complete,
@@ -195,12 +201,12 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
 
     private void AutoDismiss(Guid notificationId)
     {
-        if (!_notifications.TryGetValue(notificationId, out var tracked) ||
-            !tracked.TryMarkTimedOut())
+        if (!_notifications.TryGetValue(notificationId, out var tracked))
         {
             return;
         }
 
+        var isFirstTimeout = tracked.TryMarkTimedOut();
         tracked.StopAutoDismiss();
         try
         {
@@ -213,7 +219,47 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
             _statusMessage = $"通知中心保留失败：{exception.Message}";
         }
 
-        RaiseTimedOut(tracked.Request);
+        if (!IsCurrent(tracked))
+        {
+            RemoveFromHistory(tracked);
+            return;
+        }
+
+        if (isFirstTimeout)
+        {
+            RaiseTimedOut(tracked.Request);
+        }
+    }
+
+    private void Reopen(TrackedNotification tracked)
+    {
+        if (_disposed || !IsCurrent(tracked))
+        {
+            return;
+        }
+
+        tracked.StopAutoDismiss();
+        try
+        {
+            var toast = CreateToast(tracked, suppressPopup: false);
+            ToastNotificationManagerCompat.CreateToastNotifier().Show(toast);
+            if (!IsCurrent(tracked))
+            {
+                RemoveFromHistory(tracked);
+                return;
+            }
+
+            tracked.RestartAutoDismiss(
+                tracked.Request.VisibleDuration,
+                () => AutoDismiss(tracked.Request.NotificationId));
+            _isAvailable = true;
+            _statusMessage = "Windows 通知已就绪";
+        }
+        catch (Exception exception)
+        {
+            _isAvailable = false;
+            _statusMessage = $"重新显示通知失败：{exception.Message}";
+        }
     }
 
     private ToastNotification CreateToast(
@@ -261,12 +307,34 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
                 DateTimeOffset.Now));
     }
 
+    private bool IsCurrent(TrackedNotification tracked)
+    {
+        return _notifications.TryGetValue(
+                   tracked.Request.NotificationId,
+                   out var current) &&
+               ReferenceEquals(current, tracked);
+    }
+
+    private static void RemoveFromHistory(TrackedNotification tracked)
+    {
+        try
+        {
+            ToastNotificationManagerCompat.History.Remove(tracked.Tag, ToastGroup);
+        }
+        catch
+        {
+            // A concurrent business action already invalidated the notification.
+        }
+    }
+
     private sealed class TrackedNotification(
         ReminderNotificationRequest request,
         string tag,
         string contentXml) : IDisposable
     {
+        private readonly object _timerGate = new();
         private System.Threading.Timer? _autoDismissTimer;
+        private bool _disposed;
         private int _timedOut;
 
         public ReminderNotificationRequest Request { get; } = request;
@@ -275,13 +343,23 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
 
         public string ContentXml { get; } = contentXml;
 
-        public void StartAutoDismiss(TimeSpan delay, Action callback)
+        public bool RestartAutoDismiss(TimeSpan delay, Action callback)
         {
-            _autoDismissTimer = new System.Threading.Timer(
-                _ => callback(),
-                null,
-                delay,
-                Timeout.InfiniteTimeSpan);
+            lock (_timerGate)
+            {
+                if (_disposed)
+                {
+                    return false;
+                }
+
+                _autoDismissTimer?.Dispose();
+                _autoDismissTimer = new System.Threading.Timer(
+                    _ => callback(),
+                    null,
+                    delay,
+                    Timeout.InfiniteTimeSpan);
+                return true;
+            }
         }
 
         public bool TryMarkTimedOut()
@@ -291,12 +369,26 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
 
         public void StopAutoDismiss()
         {
-            Interlocked.Exchange(ref _autoDismissTimer, null)?.Dispose();
+            lock (_timerGate)
+            {
+                _autoDismissTimer?.Dispose();
+                _autoDismissTimer = null;
+            }
         }
 
         public void Dispose()
         {
-            StopAutoDismiss();
+            lock (_timerGate)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _disposed = true;
+                _autoDismissTimer?.Dispose();
+                _autoDismissTimer = null;
+            }
         }
     }
 }

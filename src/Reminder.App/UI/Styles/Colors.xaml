@@ -17,6 +17,8 @@
     <Color x:Key="PrimaryPressedColor">#4852AE</Color>
     <Color x:Key="PrimarySubtleColor">#ECEEFB</Color>
     <Color x:Key="DangerColor">#C44D58</Color>
+    <Color x:Key="DangerHoverColor">#B5404C</Color>
+    <Color x:Key="DangerPressedColor">#9F3541</Color>
     <Color x:Key="DangerSubtleColor">#FBECEF</Color>
     <Color x:Key="SuccessColor">#3E8A67</Color>
 
@@ -33,6 +35,8 @@
     <SolidColorBrush x:Key="PrimaryPressedBrush" Color="{StaticResource PrimaryPressedColor}" />
     <SolidColorBrush x:Key="PrimarySubtleBrush" Color="{StaticResource PrimarySubtleColor}" />
     <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
+    <SolidColorBrush x:Key="DangerHoverBrush" Color="{StaticResource DangerHoverColor}" />
+    <SolidColorBrush x:Key="DangerPressedBrush" Color="{StaticResource DangerPressedColor}" />
     <SolidColorBrush x:Key="DangerSubtleBrush" Color="{StaticResource DangerSubtleColor}" />
     <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
 

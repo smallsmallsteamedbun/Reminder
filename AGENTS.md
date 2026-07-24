@@ -15,12 +15,30 @@
 
 ## Version Documentation and Release Commits
 
-- `docs/VERSION_HISTORY.md` is the concise, user-facing version update record.
+- `docs/versions/VERSION_HISTORY.md` is the concise, user-facing version update record.
+- Keep version-specific implementation plans, validation records, and release records under `docs/versions/` so repeated releases do not clutter the `docs/` root.
 - Whenever the project version number changes, add or update that version's entry before committing or uploading the release.
-- Keep the project metadata, the version shown in the application, the current version in `docs/REQUIREMENTS.md`, and the matching `docs/VERSION_HISTORY.md` entry synchronized.
+- Keep the project metadata, the version shown in the application, the current version in `docs/REQUIREMENTS.md`, and the matching `docs/versions/VERSION_HISTORY.md` entry synchronized.
 - If the user requests an upload and mentions a version-number update, record the features and optimizations completed between the previous version and the current version before performing the release commit.
 - Keep version entries short and focused on user-visible functions and improvements. Do not fill the version history with implementation details.
-- A release upload may use the version number or the user's explicitly requested release wording directly as the commit message; the detailed content belongs in `docs/VERSION_HISTORY.md`.
+- A release upload may use the version number or the user's explicitly requested release wording directly as the commit message; the detailed content belongs in `docs/versions/VERSION_HISTORY.md`.
+
+## Extensible Data and Interaction Design
+
+- Design all data and interaction flows so current behavior can be extended with future event types, settings, actions, and platform responses without rewriting unrelated modules.
+- Keep UI prompts and animation concerns in `UI`, reminder state transitions in `Logic`, Windows callbacks in `Windows`, and persistence or network work in `System`; pass user intent and results through explicit methods, events, or interfaces.
+- Do not put business-state changes directly inside reusable visual controls or platform callbacks. Route them through the responsible model or service boundary.
+- Prefer small reusable interaction components over one-off code tied to a single button or event card, while avoiding speculative frameworks for features that have not been confirmed.
+
+## UI Animation Performance
+
+- All UI animations must be short-lived, demand-driven, and designed for both smooth motion and low CPU and memory use. Do not leave animation timers, rendering callbacks, or clocks active while no animation is visible.
+- Prefer `RenderTransform` and other render-stage properties over animating layout properties such as height, width, or margin. Avoid triggering a full layout pass on every animation frame.
+- Animate only visible elements whose position or appearance actually changes. Clear animation clocks, transforms, and event subscriptions when the animation completes or is interrupted.
+- Do not hard-code UI animation frame counts or impose a fixed frame-rate cap. Define motion by duration and actual elapsed time, then let WPF and DWM render at the cadence currently available on the display; any future cap must be an explicit, measured exception.
+- Keep animation duration and perceived speed stable when render cadence changes, including when a window moves between monitors with different refresh rates. Do not advance custom animation state by assuming each callback represents `1/60` second.
+- Respect the Windows client-area animation preference. When animations are disabled, the UI must complete the same operation immediately without changing business behavior.
+- Reuse a small shared animation mechanism and verify resource use and interruption behavior; do not add a large animation dependency for ordinary interface transitions.
 
 ## Codex Memory Protocol
 
