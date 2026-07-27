@@ -31,6 +31,8 @@ public sealed partial class ReminderEngine : IDisposable
 
     public event EventHandler? StateChanged;
 
+    public event EventHandler? DurableStateChanged;
+
     public bool NotificationsAvailable => _notificationService.IsAvailable;
 
     public string NotificationStatus => _notificationService.StatusMessage;
@@ -67,6 +69,7 @@ public sealed partial class ReminderEngine : IDisposable
         }
 
         RaiseStateChanged();
+        RaiseDurableStateChanged();
         return id;
     }
 
@@ -96,6 +99,11 @@ public sealed partial class ReminderEngine : IDisposable
                 return false;
             }
 
+            if (reminderEvent.Name == validatedName)
+            {
+                return true;
+            }
+
             reminderEvent.Name = validatedName;
             var now = Now;
             ActivateAfterEditLocked(reminderEvent, now);
@@ -113,6 +121,7 @@ public sealed partial class ReminderEngine : IDisposable
         }
 
         RaiseStateChanged();
+        RaiseDurableStateChanged();
         return true;
     }
 
@@ -130,9 +139,15 @@ public sealed partial class ReminderEngine : IDisposable
             ThrowIfDisposed();
             var reminderEvent = FindEventLocked(eventId);
             if (reminderEvent is null ||
-                reminderEvent.Schedule is not FixedIntervalSchedule)
+                reminderEvent.Schedule is not FixedIntervalSchedule fixedInterval)
             {
                 return false;
+            }
+
+            if (fixedInterval.Interval ==
+                TimeSpan.FromMinutes(intervalMinutes))
+            {
+                return true;
             }
 
             reminderEvent.Schedule = new FixedIntervalSchedule(
@@ -146,6 +161,7 @@ public sealed partial class ReminderEngine : IDisposable
 
         RemoveNotification(notificationToRemove);
         RaiseStateChanged();
+        RaiseDurableStateChanged();
         return true;
     }
 
@@ -186,6 +202,7 @@ public sealed partial class ReminderEngine : IDisposable
 
         RemoveNotification(notificationToRemove);
         RaiseStateChanged();
+        RaiseDurableStateChanged();
         return true;
     }
 
@@ -221,6 +238,7 @@ public sealed partial class ReminderEngine : IDisposable
 
         RemoveNotification(notificationToRemove);
         RaiseStateChanged();
+        RaiseDurableStateChanged();
         return true;
     }
 
@@ -369,6 +387,12 @@ public sealed partial class ReminderEngine : IDisposable
                 return false;
             }
 
+            if (reminderEvent.Termination.RemainingOccurrences ==
+                remainingOccurrences)
+            {
+                return true;
+            }
+
             reminderEvent.Termination.SetRemaining(remainingOccurrences);
             var now = Now;
             ActivateAfterEditLocked(reminderEvent, now);
@@ -376,6 +400,7 @@ public sealed partial class ReminderEngine : IDisposable
         }
 
         RaiseStateChanged();
+        RaiseDurableStateChanged();
         return true;
     }
 
@@ -490,6 +515,7 @@ public sealed partial class ReminderEngine : IDisposable
         }
 
         RaiseStateChanged();
+        RaiseDurableStateChanged();
     }
 
     public void Delete(Guid eventId)
@@ -512,6 +538,7 @@ public sealed partial class ReminderEngine : IDisposable
 
         RemoveNotification(notificationToRemove);
         RaiseStateChanged();
+        RaiseDurableStateChanged();
     }
 
     public void RestartAll()
@@ -549,6 +576,7 @@ public sealed partial class ReminderEngine : IDisposable
 
         RemoveNotifications(notificationsToRemove);
         RaiseStateChanged();
+        RaiseDurableStateChanged();
     }
 
     public void Dispose()
@@ -926,6 +954,11 @@ public sealed partial class ReminderEngine : IDisposable
                 return false;
             }
 
+            if (settings == schedule.Settings)
+            {
+                return true;
+            }
+
             reminderEvent.Schedule = new ScheduledTimeSchedule(settings);
             PrepareActiveScheduleEditLocked(reminderEvent);
             var now = Now;
@@ -947,6 +980,7 @@ public sealed partial class ReminderEngine : IDisposable
         }
 
         RaiseStateChanged();
+        RaiseDurableStateChanged();
         return true;
     }
 
@@ -1304,6 +1338,11 @@ public sealed partial class ReminderEngine : IDisposable
         }
 
         StateChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void RaiseDurableStateChanged()
+    {
+        DurableStateChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void ThrowIfDisposed()

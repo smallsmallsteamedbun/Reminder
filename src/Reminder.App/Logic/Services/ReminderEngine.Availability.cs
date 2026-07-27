@@ -78,6 +78,7 @@ public sealed partial class ReminderEngine
 
         RemoveNotifications(notificationsToRemove);
         RaiseStateChanged();
+        RaiseDurableStateChanged();
     }
 
     public void SetGlobalPauseDuration(
@@ -97,6 +98,7 @@ public sealed partial class ReminderEngine
         }
 
         RaiseStateChanged();
+        RaiseDurableStateChanged();
     }
 
     public void ResumeAll()
@@ -145,6 +147,7 @@ public sealed partial class ReminderEngine
         }
 
         RaiseStateChanged();
+        RaiseDurableStateChanged();
     }
 
     public bool UpdateFixedUnavailablePolicy(
@@ -160,6 +163,11 @@ public sealed partial class ReminderEngine
                 return false;
             }
 
+            if (reminderEvent.FixedUnavailablePolicy == policy)
+            {
+                return true;
+            }
+
             var now = Now;
             reminderEvent.FixedUnavailablePolicy = policy;
             ActivateAfterEditLocked(reminderEvent, now);
@@ -168,6 +176,7 @@ public sealed partial class ReminderEngine
         }
 
         RaiseStateChanged();
+        RaiseDurableStateChanged();
         return true;
     }
 
@@ -184,6 +193,11 @@ public sealed partial class ReminderEngine
                 return false;
             }
 
+            if (reminderEvent.FixedUnavailableNotificationPolicy == policy)
+            {
+                return true;
+            }
+
             var now = Now;
             reminderEvent.FixedUnavailableNotificationPolicy = policy;
             ActivateAfterEditLocked(reminderEvent, now);
@@ -192,6 +206,7 @@ public sealed partial class ReminderEngine
         }
 
         RaiseStateChanged();
+        RaiseDurableStateChanged();
         return true;
     }
 
@@ -208,6 +223,11 @@ public sealed partial class ReminderEngine
                 return false;
             }
 
+            if (reminderEvent.ScheduledUnavailableNotificationPolicy == policy)
+            {
+                return true;
+            }
+
             var now = Now;
             reminderEvent.ScheduledUnavailableNotificationPolicy = policy;
             ActivateAfterEditLocked(reminderEvent, now);
@@ -215,6 +235,7 @@ public sealed partial class ReminderEngine
         }
 
         RaiseStateChanged();
+        RaiseDurableStateChanged();
         return true;
     }
 

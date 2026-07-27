@@ -28,6 +28,7 @@ public partial class MainWindow : Window
     private readonly ListReflowAnimator _eventListReflowAnimator;
     private HwndSource? _windowSource;
     private EventViewModel? _highlightedEvent;
+    private bool _allowApplicationExit;
 
     public MainWindow(MainViewModel viewModel)
     {
@@ -108,10 +109,19 @@ public partial class MainWindow : Window
         StartUiRefresh();
     }
 
+    public void AllowApplicationExit()
+    {
+        _allowApplicationExit = true;
+    }
+
     protected override void OnClosing(CancelEventArgs e)
     {
-        e.Cancel = true;
-        Hide();
+        if (!_allowApplicationExit)
+        {
+            e.Cancel = true;
+            Hide();
+        }
+
         base.OnClosing(e);
     }
 

@@ -7,9 +7,10 @@
 - `VERSION_HISTORY.md`：面向用户的简短版本更新记录。
 - `Vx.y.z_IMPLEMENTATION_PLAN.md`：特定版本的实施计划。
 - `Vx.y.z_VALIDATION.md`：特定版本完成后的验证记录与已知限制。
+- `UNRELEASED_*.md`：已经实现但尚未分配到新版本号的阶段验证记录；正式发布时再并入对应版本文档。
 
 ## 当前版本
 
-- 当前版本：`0.3.0`
+- 当前版本：`0.4.0`
 - 更新内容：`VERSION_HISTORY.md`
-- 验证记录：`V0.3.0_VALIDATION.md`
+- 验证记录：`V0.4.0_VALIDATION.md`

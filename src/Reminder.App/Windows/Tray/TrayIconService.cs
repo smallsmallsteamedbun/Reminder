@@ -11,16 +11,19 @@ public sealed class TrayIconService : IDisposable
     private readonly Action _showMainWindow;
     private readonly Action _pauseAll;
     private readonly Action _resumeAll;
+    private readonly Action _exit;
     private bool _disposed;
 
     public TrayIconService(
         Action showMainWindow,
         Action pauseAll,
-        Action resumeAll)
+        Action resumeAll,
+        Action exit)
     {
         _showMainWindow = showMainWindow;
         _pauseAll = pauseAll;
         _resumeAll = resumeAll;
+        _exit = exit;
 
         var openItem = new Forms.ToolStripMenuItem("打开 Reminder");
         openItem.Click += (_, _) => ShowMainWindow();
@@ -36,6 +39,9 @@ public sealed class TrayIconService : IDisposable
         var resumeAllItem = new Forms.ToolStripMenuItem("全部恢复");
         resumeAllItem.Click += (_, _) => Dispatch(_resumeAll);
 
+        var exitItem = new Forms.ToolStripMenuItem("退出");
+        exitItem.Click += (_, _) => Dispatch(_exit);
+
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add(openItem);
         menu.Items.Add(new Forms.ToolStripSeparator());
@@ -43,6 +49,8 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Add(resumeAllItem);
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add(versionItem);
+        menu.Items.Add(new Forms.ToolStripSeparator());
+        menu.Items.Add(exitItem);
 
         _notifyIcon = new Forms.NotifyIcon
         {
