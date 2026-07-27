@@ -103,22 +103,40 @@
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button
-                        AutomationProperties.AutomationId="PauseAllButton"
-                        Command="{Binding PauseAllCommand}"
-                        Content="全部暂停"
-                        Style="{StaticResource ReminderButtonStyle}" />
+                        x:Name="GlobalPauseToggleButton"
+                        AutomationProperties.AutomationId="GlobalPauseToggleButton"
+                        Click="GlobalActionButton_OnClick"
+                        Command="{Binding ToggleGlobalPauseCommand}"
+                        Content="{Binding GlobalPauseToggleText}"
+                        Style="{StaticResource ReminderButtonStyle}"
+                        ToolTipService.BetweenShowDelay="0"
+                        ToolTipService.InitialShowDelay="1000"
+                        ToolTipService.ShowDuration="10000">
+                        <Button.ToolTip>
+                            <ToolTip
+                                DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
+                                Placement="Top">
+                                <TextBlock Text="{Binding GlobalPauseToggleHint}" />
+                            </ToolTip>
+                        </Button.ToolTip>
+                    </Button>
                     <Button
-                        Margin="8,0,0,0"
-                        AutomationProperties.AutomationId="ResumeAllButton"
-                        Command="{Binding ResumeAllCommand}"
-                        Content="全部恢复"
-                        Style="{StaticResource ReminderButtonStyle}" />
-                    <Button
+                        x:Name="RestartAllButton"
                         Margin="8,0,0,0"
                         AutomationProperties.AutomationId="RestartAllButton"
+                        Click="GlobalActionButton_OnClick"
                         Command="{Binding RestartAllCommand}"
                         Content="全部重启"
-                        Style="{StaticResource ReminderButtonStyle}" />
+                        Style="{StaticResource ReminderButtonStyle}"
+                        ToolTipService.BetweenShowDelay="0"
+                        ToolTipService.InitialShowDelay="1000"
+                        ToolTipService.ShowDuration="10000">
+                        <Button.ToolTip>
+                            <ToolTip Placement="Top">
+                                <TextBlock Text="重启所有已开启事件的倒计时" />
+                            </ToolTip>
+                        </Button.ToolTip>
+                    </Button>
                     <Button
                         Margin="12,0,0,0"
                         AutomationProperties.AutomationId="AddEventButton"
@@ -130,33 +148,46 @@
 
             <Border
                 Grid.Row="1"
-                Margin="0,20,0,14"
+                Margin="0,16,0,0"
                 Padding="14,10"
-                Background="{StaticResource PrimarySubtleBrush}"
-                CornerRadius="8">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
+                Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Visibility="{Binding IsGlobalPaused, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <StackPanel Orientation="Horizontal">
                     <TextBlock
-                        Grid.Column="0"
-                        Margin="0,0,8,0"
-                        FontSize="14"
-                        Foreground="{StaticResource PrimaryBrush}"
-                        Text="●" />
+                        VerticalAlignment="Center"
+                        FontSize="13"
+                        FontWeight="SemiBold"
+                        Text="全部暂停已开启" />
                     <TextBlock
-                        Grid.Column="1"
+                        Margin="18,0,8,0"
+                        VerticalAlignment="Center"
                         FontSize="13"
                         Foreground="{StaticResource TextSecondaryBrush}"
-                        Text="{Binding NotificationStatus}"
-                        TextTrimming="CharacterEllipsis" />
-                </Grid>
+                        Text="暂停" />
+                    <ComboBox
+                        Width="150"
+                        AutomationProperties.Name="全部暂停时长"
+                        DisplayMemberPath="Label"
+                        ItemsSource="{Binding GlobalPauseChoices}"
+                        SelectedItem="{Binding SelectedGlobalPauseChoice, Mode=TwoWay}"
+                        Style="{StaticResource InputComboBoxStyle}" />
+                    <TextBlock
+                        Margin="14,0,0,0"
+                        VerticalAlignment="Center"
+                        FontSize="13"
+                        Foreground="{StaticResource PrimaryBrush}"
+                        Text="{Binding GlobalPauseRemainingText}"
+                        Visibility="{Binding ShowGlobalPauseCountdown, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                </StackPanel>
             </Border>
 
             <ScrollViewer
                 x:Name="EventListScrollViewer"
                 Grid.Row="2"
+                Margin="0,14,0,0"
                 HorizontalScrollBarVisibility="Disabled"
                 PreviewMouseWheel="EventListScrollViewer_OnPreviewMouseWheel"
                 VerticalScrollBarVisibility="Auto">
@@ -584,6 +615,7 @@
                                                             Width="178"
                                                             HorizontalAlignment="Left"
                                                             AutomationProperties.Name="固定时间事件息屏和锁屏策略"
+                                                            DisplayMemberPath="Label"
                                                             ItemsSource="{Binding FixedSystemPolicyChoices}"
                                                             SelectedItem="{Binding SelectedFixedSystemPolicy, Mode=TwoWay}"
                                                             Style="{StaticResource InputComboBoxStyle}" />
@@ -592,6 +624,7 @@
                                                             Margin="0,6,0,0"
                                                             HorizontalAlignment="Left"
                                                             AutomationProperties.Name="固定时间事件息屏和锁屏期间是否提醒"
+                                                            DisplayMemberPath="Label"
                                                             ItemsSource="{Binding SystemNotificationChoices}"
                                                             SelectedItem="{Binding SelectedFixedSystemNotification, Mode=TwoWay}"
                                                             Style="{StaticResource InputComboBoxStyle}"
@@ -602,6 +635,7 @@
                                                         Width="178"
                                                         HorizontalAlignment="Left"
                                                         AutomationProperties.Name="指定时间事件息屏和锁屏期间是否提醒"
+                                                        DisplayMemberPath="Label"
                                                         ItemsSource="{Binding SystemNotificationChoices}"
                                                         SelectedItem="{Binding SelectedScheduledSystemNotification, Mode=TwoWay}"
                                                         Style="{StaticResource InputComboBoxStyle}"
@@ -620,9 +654,67 @@
 
         <Border
             Grid.Row="2"
-            Height="7"
+            Height="30"
+            Padding="28,0"
             Background="{StaticResource SurfaceBrush}"
             BorderBrush="{StaticResource BorderBrush}"
-            BorderThickness="0,1,0,0" />
+            BorderThickness="0,1,0,0">
+            <StackPanel
+                x:Name="NotificationStatusPanel"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Orientation="Horizontal"
+                ToolTipService.InitialShowDelay="500">
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Setter Property="ToolTipService.IsEnabled" Value="False" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding NotificationsAvailable}" Value="False">
+                                <Setter Property="ToolTipService.IsEnabled" Value="True" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <StackPanel.ToolTip>
+                    <ToolTip
+                        DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
+                        Placement="Top">
+                        <TextBlock
+                            MaxWidth="380"
+                            Text="{Binding NotificationStatusHelp}"
+                            TextWrapping="Wrap" />
+                    </ToolTip>
+                </StackPanel.ToolTip>
+                <TextBlock
+                    Margin="0,0,6,0"
+                    FontSize="11"
+                    Text="●">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding NotificationsAvailable}" Value="False">
+                                    <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock
+                    FontSize="11"
+                    Text="{Binding NotificationStatus}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding NotificationsAvailable}" Value="False">
+                                    <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

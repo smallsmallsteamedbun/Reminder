@@ -13,10 +13,12 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
     private bool _disposed;
     private bool _isAvailable = true;
     private string _statusMessage = "Windows 通知已就绪";
+    private string _statusHelpMessage = "Windows 通知功能正常。";
 
     public WindowsToastNotificationService()
     {
         ToastNotificationManagerCompat.OnActivated += OnToastActivated;
+        RefreshAvailability();
     }
 
     public event EventHandler<ReminderNotificationResponse>? ResponseReceived;
@@ -24,6 +26,28 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
     public bool IsAvailable => _isAvailable;
 
     public string StatusMessage => _statusMessage;
+
+    public string StatusHelpMessage => _statusHelpMessage;
+
+    private void RefreshAvailability()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        try
+        {
+            _ = GetReadyNotifier();
+        }
+        catch (Exception exception)
+        {
+            MarkUnavailable(
+                $"启动时读取 Windows 通知设置失败：{exception.Message}",
+                "请确认 Windows“设置 > 系统 > 通知”中的系统通知和 " +
+                "Reminder 通知均已开启；若仍失败，请重新启动或重新安装 Reminder。");
+        }
+    }
 
     public bool Show(ReminderNotificationRequest request)
     {
@@ -34,6 +58,17 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
 
         try
         {
+            var notifier = GetReadyNotifier();
+            if (notifier is null)
+            {
+                return false;
+            }
+
+            if (request.RequestDisplayAttention)
+            {
+                _ = DisplayAttentionService.TryRequestDisplayOn();
+            }
+
             var tag = CreateTag(request.NotificationId);
             var content = new ToastContentBuilder()
                 .AddArgument("eventId", request.EventId.ToString("N"))
@@ -56,10 +91,9 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
                 () => AutoDismiss(request.NotificationId));
 
             var toast = CreateToast(tracked, suppressPopup: false);
-            ToastNotificationManagerCompat.CreateToastNotifier().Show(toast);
-            _isAvailable = true;
-            _statusMessage = "Windows 通知已就绪";
-            return true;
+            notifier.Show(toast);
+            RefreshAvailabilityAfterShow(notifier);
+            return _isAvailable;
         }
         catch (Exception exception)
         {
@@ -68,8 +102,10 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
                 tracked.Dispose();
             }
 
-            _isAvailable = false;
-            _statusMessage = $"Windows 通知暂不可用：{exception.Message}";
+            MarkUnavailable(
+                $"发送通知时发生错误：{exception.Message}",
+                "请确认 Windows“设置 > 系统 > 通知”中的系统通知和 " +
+                "Reminder 通知均已开启；若仍失败，请重新启动或重新安装 Reminder。");
             return false;
         }
     }
@@ -83,6 +119,12 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
 
         try
         {
+            var notifier = GetReadyNotifier();
+            if (notifier is null)
+            {
+                return false;
+            }
+
             var content = new ToastContentBuilder()
                 .AddText("Reminder · 已跳过")
                 .AddText(string.Join("、", eventNames))
@@ -94,15 +136,16 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
             {
                 Group = ToastGroup
             };
-            ToastNotificationManagerCompat.CreateToastNotifier().Show(toast);
-            _isAvailable = true;
-            _statusMessage = "Windows 通知已就绪";
-            return true;
+            notifier.Show(toast);
+            RefreshAvailabilityAfterShow(notifier);
+            return _isAvailable;
         }
         catch (Exception exception)
         {
-            _isAvailable = false;
-            _statusMessage = $"已跳过通知暂不可用：{exception.Message}";
+            MarkUnavailable(
+                $"发送“已跳过”通知时发生错误：{exception.Message}",
+                "请确认 Windows“设置 > 系统 > 通知”中的系统通知和 " +
+                "Reminder 通知均已开启；若仍失败，请重新启动 Reminder。");
             return false;
         }
     }
@@ -243,13 +286,22 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
         tracked.StopAutoDismiss();
         try
         {
-            var notificationCenterToast = CreateToast(tracked, suppressPopup: true);
-            ToastNotificationManagerCompat.CreateToastNotifier().Show(notificationCenterToast);
+            var notifier = GetReadyNotifier();
+            if (notifier is not null)
+            {
+                var notificationCenterToast = CreateToast(
+                    tracked,
+                    suppressPopup: true);
+                notifier.Show(notificationCenterToast);
+                RefreshAvailabilityAfterShow(notifier);
+            }
         }
         catch (Exception exception)
         {
-            _isAvailable = false;
-            _statusMessage = $"通知中心保留失败：{exception.Message}";
+            MarkUnavailable(
+                $"通知中心保留失败：{exception.Message}",
+                "请确认 Reminder 的 Windows 通知权限已开启；" +
+                "若权限正常，请重新启动 Reminder。");
         }
 
         if (!IsCurrent(tracked))
@@ -274,8 +326,15 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
         tracked.StopAutoDismiss();
         try
         {
+            var notifier = GetReadyNotifier();
+            if (notifier is null)
+            {
+                return;
+            }
+
             var toast = CreateToast(tracked, suppressPopup: false);
-            ToastNotificationManagerCompat.CreateToastNotifier().Show(toast);
+            notifier.Show(toast);
+            RefreshAvailabilityAfterShow(notifier);
             if (!IsCurrent(tracked))
             {
                 RemoveFromHistory(tracked);
@@ -285,13 +344,13 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
             tracked.RestartAutoDismiss(
                 tracked.Request.VisibleDuration,
                 () => AutoDismiss(tracked.Request.NotificationId));
-            _isAvailable = true;
-            _statusMessage = "Windows 通知已就绪";
         }
         catch (Exception exception)
         {
-            _isAvailable = false;
-            _statusMessage = $"重新显示通知失败：{exception.Message}";
+            MarkUnavailable(
+                $"重新显示通知失败：{exception.Message}",
+                "请确认 Reminder 的 Windows 通知权限已开启；" +
+                "若权限正常，请重新启动 Reminder。");
         }
     }
 
@@ -310,11 +369,117 @@ public sealed class WindowsToastNotificationService : IReminderNotificationServi
 
         toast.Dismissed += (_, args) =>
             OnToastDismissed(tracked.Request, args.Reason);
-        toast.Failed += (_, _) => Complete(
-            tracked.Request,
-            ReminderNotificationAction.DeliveryFailed,
-            DateTimeOffset.Now);
+        toast.Failed += (_, _) =>
+        {
+            MarkUnavailable(
+                "Windows 报告通知投递失败。",
+                "请确认 Windows“设置 > 系统 > 通知”中的系统通知和 " +
+                "Reminder 通知均已开启；若仍失败，请重新启动 Reminder。");
+            Complete(
+                tracked.Request,
+                ReminderNotificationAction.DeliveryFailed,
+                DateTimeOffset.Now);
+        };
         return toast;
+    }
+
+    private ToastNotifierCompat? GetReadyNotifier()
+    {
+        ToastNotifierCompat notifier;
+        try
+        {
+            notifier =
+                ToastNotificationManagerCompat.CreateToastNotifier();
+        }
+        catch (Exception exception)
+        {
+            MarkUnavailable(
+                $"无法创建 Windows 通知发送器：{exception.Message}",
+                "请重新启动 Reminder；若仍未恢复，请确认 Windows 通知已开启，" +
+                "并尝试重新安装程序。");
+            return null;
+        }
+
+        return IsNotifierEnabled(notifier)
+            ? notifier
+            : null;
+    }
+
+    private void RefreshAvailabilityAfterShow(
+        ToastNotifierCompat notifier)
+    {
+        _ = IsNotifierEnabled(notifier);
+    }
+
+    private bool IsNotifierEnabled(ToastNotifierCompat notifier)
+    {
+        try
+        {
+            var setting = notifier.Setting;
+            if (setting == NotificationSetting.Enabled)
+            {
+                MarkAvailable();
+                return true;
+            }
+
+            MarkUnavailable(setting);
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Some unpackaged desktop processes can send compatible toasts but
+            // Windows does not permit them to query ToastNotifier.Setting.
+            // Keep delivery enabled and rely on Show/Failed to report a real
+            // delivery error instead of disabling notifications pre-emptively.
+            MarkAvailable();
+            return true;
+        }
+        catch (Exception exception)
+        {
+            MarkUnavailable(
+                $"读取 Windows 通知设置失败：{exception.Message}",
+                "请确认 Windows“设置 > 系统 > 通知”中的系统通知和 " +
+                "Reminder 通知均已开启；若仍失败，请重新启动 Reminder。");
+            return false;
+        }
+    }
+
+    private void MarkAvailable()
+    {
+        _isAvailable = true;
+        _statusMessage = "Windows 通知已就绪";
+        _statusHelpMessage = "Windows 通知功能正常。";
+    }
+
+    private void MarkUnavailable(NotificationSetting setting)
+    {
+        var (reason, solution) = setting switch
+        {
+            NotificationSetting.DisabledForApplication => (
+                "Windows 已关闭 Reminder 的通知权限。",
+                "请打开“设置 > 系统 > 通知”，找到 Reminder 并开启通知。"),
+            NotificationSetting.DisabledForUser => (
+                "当前 Windows 用户的全部通知已被关闭。",
+                "请打开“设置 > 系统 > 通知”，开启系统通知。"),
+            NotificationSetting.DisabledByGroupPolicy => (
+                "通知已被 Windows 组策略关闭。",
+                "此设置通常由组织管理员控制，请联系系统管理员开启通知。"),
+            NotificationSetting.DisabledByManifest => (
+                "当前安装未正确声明 Windows 通知能力。",
+                "请重新安装正式发布的 Reminder 安装包。"),
+            _ => (
+                $"Windows 返回了未知通知状态：{setting}。",
+                "请检查 Windows 通知设置，然后重新启动 Reminder。")
+        };
+
+        MarkUnavailable(reason, solution);
+    }
+
+    private void MarkUnavailable(string reason, string solution)
+    {
+        _isAvailable = false;
+        _statusMessage = "Windows 通知未就绪";
+        _statusHelpMessage = $"{reason}\n{solution}";
     }
 
     private void ReportTimedOut(ReminderNotificationRequest request)

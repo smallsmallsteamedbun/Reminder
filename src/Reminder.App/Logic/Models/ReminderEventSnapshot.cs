@@ -18,6 +18,20 @@ public sealed record ReminderEventSnapshot
 
     public required bool IsPaused { get; init; }
 
+    public required FixedUnavailablePolicy FixedUnavailablePolicy { get; init; }
+
+    public required UnavailableNotificationPolicy
+        FixedUnavailableNotificationPolicy { get; init; }
+
+    public required UnavailableNotificationPolicy
+        ScheduledUnavailableNotificationPolicy { get; init; }
+
+    public required bool IsBlockedByGlobalPause { get; init; }
+
+    public required bool IsBlockedBySystemState { get; init; }
+
+    public required bool IsEffectivelyRunning { get; init; }
+
     public required bool IsAwaitingAction { get; init; }
 
     public required bool CanRestart { get; init; }

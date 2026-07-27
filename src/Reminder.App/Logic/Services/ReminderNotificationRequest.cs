@@ -5,4 +5,5 @@ public sealed record ReminderNotificationRequest(
     Guid NotificationId,
     string EventName,
     DateTimeOffset ShownAt,
-    TimeSpan VisibleDuration);
+    TimeSpan VisibleDuration,
+    bool RequestDisplayAttention = false);

@@ -10,9 +10,11 @@ using Reminder.App.Logic.Services;
 using Reminder.App.SystemModule.Runtime;
 using Reminder.App.UI.Interactions;
 using Reminder.App.UI.ViewModels;
+using Button = System.Windows.Controls.Button;
 using ComboBox = System.Windows.Controls.ComboBox;
 using DataFormats = System.Windows.DataFormats;
 using TextBox = System.Windows.Controls.TextBox;
+using ToolTip = System.Windows.Controls.ToolTip;
 
 namespace Reminder.App.UI.Views;
 
@@ -234,26 +236,47 @@ public partial class MainWindow : Window
             }
 
             openComboBox.IsDropDownOpen = false;
-            if (ReferenceEquals(sourceComboBox, openComboBox))
-            {
-                e.Handled = true;
-                return;
-            }
         }
 
-        if (sourceComboBox is not { } comboBox ||
-            comboBox.Items.Count == 0)
+        if (sourceComboBox is null)
         {
             return;
         }
 
-        var direction = Math.Sign(e.Delta);
-        var currentIndex = Math.Max(0, comboBox.SelectedIndex);
-        comboBox.SelectedIndex = Math.Clamp(
-            currentIndex - direction,
-            0,
-            comboBox.Items.Count - 1);
+        if (IsDescendantOf(sourceComboBox, EventListScrollViewer) &&
+            EventListScrollViewer.ScrollableHeight > 0)
+        {
+            _eventListScroller.ScrollBy(-e.Delta);
+        }
+
         e.Handled = true;
+    }
+
+    private static bool IsDescendantOf(
+        DependencyObject child,
+        DependencyObject ancestor)
+    {
+        for (var current = child;
+             current is not null;
+             current = GetParent(current))
+        {
+            if (ReferenceEquals(current, ancestor))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void GlobalActionButton_OnClick(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (sender is Button { ToolTip: ToolTip toolTip })
+        {
+            toolTip.IsOpen = false;
+        }
     }
 
     private ComboBox? FindOpenComboBox()

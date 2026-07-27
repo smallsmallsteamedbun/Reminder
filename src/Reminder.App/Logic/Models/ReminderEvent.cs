@@ -14,6 +14,25 @@ internal sealed class ReminderEvent
 
     public bool IsPaused { get; set; }
 
+    public FixedUnavailablePolicy FixedUnavailablePolicy { get; set; } =
+        FixedUnavailablePolicy.PauseTiming;
+
+    public UnavailableNotificationPolicy FixedUnavailableNotificationPolicy
+    {
+        get;
+        set;
+    } = UnavailableNotificationPolicy.Suppress;
+
+    public UnavailableNotificationPolicy ScheduledUnavailableNotificationPolicy
+    {
+        get;
+        set;
+    } = UnavailableNotificationPolicy.Suppress;
+
+    public FixedClockBlockReason FixedClockBlockReasons { get; set; }
+
+    public bool SystemBlockInterruptedActiveNotification { get; set; }
+
     public DateTimeOffset? DueAt { get; set; }
 
     public TimeSpan FrozenRemaining { get; set; }

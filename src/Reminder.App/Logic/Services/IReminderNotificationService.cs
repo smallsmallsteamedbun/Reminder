@@ -8,6 +8,8 @@ public interface IReminderNotificationService : IDisposable
 
     string StatusMessage { get; }
 
+    string StatusHelpMessage { get; }
+
     bool Show(ReminderNotificationRequest request);
 
     bool ShowMissedEvents(IReadOnlyList<string> eventNames);

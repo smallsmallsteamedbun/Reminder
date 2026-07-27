@@ -9,11 +9,18 @@ public sealed class TrayIconService : IDisposable
 {
     private readonly Forms.NotifyIcon _notifyIcon;
     private readonly Action _showMainWindow;
+    private readonly Action _pauseAll;
+    private readonly Action _resumeAll;
     private bool _disposed;
 
-    public TrayIconService(Action showMainWindow)
+    public TrayIconService(
+        Action showMainWindow,
+        Action pauseAll,
+        Action resumeAll)
     {
         _showMainWindow = showMainWindow;
+        _pauseAll = pauseAll;
+        _resumeAll = resumeAll;
 
         var openItem = new Forms.ToolStripMenuItem("打开 Reminder");
         openItem.Click += (_, _) => ShowMainWindow();
@@ -23,8 +30,17 @@ public sealed class TrayIconService : IDisposable
             Enabled = false
         };
 
+        var pauseAllItem = new Forms.ToolStripMenuItem("快捷全部暂停");
+        pauseAllItem.Click += (_, _) => Dispatch(_pauseAll);
+
+        var resumeAllItem = new Forms.ToolStripMenuItem("全部恢复");
+        resumeAllItem.Click += (_, _) => Dispatch(_resumeAll);
+
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add(openItem);
+        menu.Items.Add(new Forms.ToolStripSeparator());
+        menu.Items.Add(pauseAllItem);
+        menu.Items.Add(resumeAllItem);
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add(versionItem);
 
@@ -54,11 +70,14 @@ public sealed class TrayIconService : IDisposable
 
     private void ShowMainWindow()
     {
-        if (_disposed)
-        {
-            return;
-        }
+        Dispatch(_showMainWindow);
+    }
 
-        System.Windows.Application.Current.Dispatcher.BeginInvoke(_showMainWindow);
+    private void Dispatch(Action action)
+    {
+        if (!_disposed)
+        {
+            System.Windows.Application.Current.Dispatcher.BeginInvoke(action);
+        }
     }
 }

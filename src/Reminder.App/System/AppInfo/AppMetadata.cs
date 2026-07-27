@@ -3,5 +3,5 @@ namespace Reminder.App.SystemModule.AppInfo;
 public static class AppMetadata
 {
     public const string Name = "Reminder";
-    public const string Version = "0.2.0";
+    public const string Version = "0.3.0";
 }

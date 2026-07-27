@@ -16,6 +16,14 @@ public sealed record TerminationChoice(
     int Value,
     string Label);
 
+public sealed record FixedSystemPolicyChoice(
+    FixedUnavailablePolicy Value,
+    string Label);
+
+public sealed record SystemNotificationChoice(
+    UnavailableNotificationPolicy Value,
+    string Label);
+
 public sealed class EventViewModel : ObservableObject
 {
     private static readonly IReadOnlyList<RecurrenceChoice> RecurrenceChoiceValues =
@@ -45,17 +53,19 @@ public sealed class EventViewModel : ObservableObject
                 value == 0 ? "不终止" : $"{value} 次"))
             .ToArray();
 
-    private static readonly IReadOnlyList<string> FixedSystemPolicyChoiceValues =
+    private static readonly IReadOnlyList<FixedSystemPolicyChoice>
+        FixedSystemPolicyChoiceValues =
     [
-        "继续计时",
-        "重新计时",
-        "暂停计时"
+        new(FixedUnavailablePolicy.ContinueTiming, "继续计时"),
+        new(FixedUnavailablePolicy.RestartTiming, "重新计时"),
+        new(FixedUnavailablePolicy.PauseTiming, "暂停计时")
     ];
 
-    private static readonly IReadOnlyList<string> SystemNotificationChoiceValues =
+    private static readonly IReadOnlyList<SystemNotificationChoice>
+        SystemNotificationChoiceValues =
     [
-        "提醒",
-        "不提醒"
+        new(UnavailableNotificationPolicy.Notify, "提醒"),
+        new(UnavailableNotificationPolicy.Suppress, "不提醒")
     ];
 
     private readonly ReminderEngine _engine;
@@ -79,12 +89,13 @@ public sealed class EventViewModel : ObservableObject
     private bool _canRestart;
     private bool _isHighlighted;
     private bool _isScheduledTime;
+    private bool _isEffectivelyRunning;
     private RecurrenceChoice _selectedRecurrenceChoice;
     private WeekdayChoice _selectedWeekdayChoice;
     private TerminationChoice _selectedTerminationChoice;
-    private string _selectedFixedSystemPolicy = "暂停计时";
-    private string _selectedFixedSystemNotification = "不提醒";
-    private string _selectedScheduledSystemNotification = "不提醒";
+    private FixedSystemPolicyChoice _selectedFixedSystemPolicy;
+    private SystemNotificationChoice _selectedFixedSystemNotification;
+    private SystemNotificationChoice _selectedScheduledSystemNotification;
     private bool _synchronizing;
 
     public EventViewModel(
@@ -109,6 +120,15 @@ public sealed class EventViewModel : ObservableObject
             FindWeekdayChoice(snapshot.ScheduledTime.DayOfWeek);
         _selectedTerminationChoice =
             FindTerminationChoice(snapshot.RemainingOccurrences);
+        _selectedFixedSystemPolicy =
+            FindFixedSystemPolicyChoice(
+                snapshot.FixedUnavailablePolicy);
+        _selectedFixedSystemNotification =
+            FindSystemNotificationChoice(
+                snapshot.FixedUnavailableNotificationPolicy);
+        _selectedScheduledSystemNotification =
+            FindSystemNotificationChoice(
+                snapshot.ScheduledUnavailableNotificationPolicy);
 
         PauseCommand = new RelayCommand(
             () => _engine.TogglePause(Id),
@@ -138,10 +158,10 @@ public sealed class EventViewModel : ObservableObject
     public IReadOnlyList<TerminationChoice> TerminationChoices =>
         TerminationChoiceValues;
 
-    public IReadOnlyList<string> FixedSystemPolicyChoices =>
+    public IReadOnlyList<FixedSystemPolicyChoice> FixedSystemPolicyChoices =>
         FixedSystemPolicyChoiceValues;
 
-    public IReadOnlyList<string> SystemNotificationChoices =>
+    public IReadOnlyList<SystemNotificationChoice> SystemNotificationChoices =>
         SystemNotificationChoiceValues;
 
     public string NameInput
@@ -345,6 +365,18 @@ public sealed class EventViewModel : ObservableObject
 
     public bool CanPauseOrResume => IsEnabled && IsFixedInterval;
 
+    public bool IsEffectivelyRunning
+    {
+        get => _isEffectivelyRunning;
+        private set
+        {
+            if (SetProperty(ref _isEffectivelyRunning, value))
+            {
+                OnPropertyChanged(nameof(CardOpacity));
+            }
+        }
+    }
+
     public bool IsHighlighted
     {
         get => _isHighlighted;
@@ -490,39 +522,74 @@ public sealed class EventViewModel : ObservableObject
         }
     }
 
-    public string SelectedFixedSystemPolicy
+    public FixedSystemPolicyChoice SelectedFixedSystemPolicy
     {
         get => _selectedFixedSystemPolicy;
         set
         {
-            if (SetProperty(ref _selectedFixedSystemPolicy, value))
+            if (value is null ||
+                !SetProperty(ref _selectedFixedSystemPolicy, value))
             {
-                OnPropertyChanged(
-                    nameof(ShowFixedSystemNotificationChoice));
+                return;
+            }
+
+            OnPropertyChanged(
+                nameof(ShowFixedSystemNotificationChoice));
+            if (!_synchronizing)
+            {
+                _engine.UpdateFixedUnavailablePolicy(Id, value.Value);
             }
         }
     }
 
-    public string SelectedFixedSystemNotification
+    public SystemNotificationChoice SelectedFixedSystemNotification
     {
         get => _selectedFixedSystemNotification;
-        set => SetProperty(ref _selectedFixedSystemNotification, value);
+        set
+        {
+            if (value is null ||
+                !SetProperty(ref _selectedFixedSystemNotification, value))
+            {
+                return;
+            }
+
+            if (!_synchronizing)
+            {
+                _engine.UpdateFixedUnavailableNotificationPolicy(
+                    Id,
+                    value.Value);
+            }
+        }
     }
 
-    public string SelectedScheduledSystemNotification
+    public SystemNotificationChoice SelectedScheduledSystemNotification
     {
         get => _selectedScheduledSystemNotification;
-        set => SetProperty(ref _selectedScheduledSystemNotification, value);
+        set
+        {
+            if (value is null ||
+                !SetProperty(
+                    ref _selectedScheduledSystemNotification,
+                    value))
+            {
+                return;
+            }
+
+            if (!_synchronizing)
+            {
+                _engine.UpdateScheduledUnavailableNotificationPolicy(
+                    Id,
+                    value.Value);
+            }
+        }
     }
 
     public bool ShowFixedSystemNotificationChoice =>
         IsFixedInterval &&
-        string.Equals(
-            SelectedFixedSystemPolicy,
-            "继续计时",
-            StringComparison.Ordinal);
+        SelectedFixedSystemPolicy.Value ==
+            FixedUnavailablePolicy.ContinueTiming;
 
-    public double CardOpacity => IsEnabled && !IsPaused ? 1.0 : 0.64;
+    public double CardOpacity => IsEffectivelyRunning ? 1.0 : 0.64;
 
     public void SetHighlighted(bool isHighlighted)
     {
@@ -741,6 +808,7 @@ public sealed class EventViewModel : ObservableObject
         {
             IsEnabled = snapshot.IsEnabled;
             IsPaused = snapshot.IsPaused;
+            IsEffectivelyRunning = snapshot.IsEffectivelyRunning;
             IsAwaitingAction = snapshot.IsAwaitingAction;
             CanRestart = snapshot.CanRestart;
             IsScheduledTime =
@@ -751,6 +819,15 @@ public sealed class EventViewModel : ObservableObject
                 FindWeekdayChoice(snapshot.ScheduledTime.DayOfWeek);
             SelectedTerminationChoice =
                 FindTerminationChoice(snapshot.RemainingOccurrences);
+            SelectedFixedSystemPolicy =
+                FindFixedSystemPolicyChoice(
+                    snapshot.FixedUnavailablePolicy);
+            SelectedFixedSystemNotification =
+                FindSystemNotificationChoice(
+                    snapshot.FixedUnavailableNotificationPolicy);
+            SelectedScheduledSystemNotification =
+                FindSystemNotificationChoice(
+                    snapshot.ScheduledUnavailableNotificationPolicy);
 
             if (nameInputWasUnmodified)
             {
@@ -806,9 +883,13 @@ public sealed class EventViewModel : ObservableObject
                 ? "已关闭"
                 : snapshot.IsPaused
                     ? "已暂停"
-                    : snapshot.IsAwaitingAction
-                        ? "等待处理"
-                        : "运行中";
+                    : snapshot.IsBlockedByGlobalPause
+                        ? "全部暂停"
+                        : snapshot.IsBlockedBySystemState
+                            ? "暂不提醒"
+                            : snapshot.IsAwaitingAction
+                                ? "等待处理"
+                                : "运行中";
 
         ScheduleSummary = CreateScheduleSummary(snapshot);
 
@@ -962,5 +1043,19 @@ public sealed class EventViewModel : ObservableObject
     {
         var value = remaining ?? 0;
         return TerminationChoiceValues[value];
+    }
+
+    private static FixedSystemPolicyChoice FindFixedSystemPolicyChoice(
+        FixedUnavailablePolicy policy)
+    {
+        return FixedSystemPolicyChoiceValues.First(
+            item => item.Value == policy);
+    }
+
+    private static SystemNotificationChoice FindSystemNotificationChoice(
+        UnavailableNotificationPolicy policy)
+    {
+        return SystemNotificationChoiceValues.First(
+            item => item.Value == policy);
     }
 }

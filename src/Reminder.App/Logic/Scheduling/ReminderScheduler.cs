@@ -3,14 +3,18 @@ namespace Reminder.App.Logic.Scheduling;
 internal sealed class ReminderScheduler : IDisposable
 {
     private static readonly TimeSpan MaximumSingleWait = TimeSpan.FromDays(20);
-    private readonly System.Threading.Timer _timer;
+    private readonly ITimer _timer;
     private readonly Action _onElapsed;
     private bool _disposed;
 
-    public ReminderScheduler(Action onElapsed)
+    public ReminderScheduler(Action onElapsed, TimeProvider timeProvider)
     {
         _onElapsed = onElapsed;
-        _timer = new System.Threading.Timer(OnTimerElapsed);
+        _timer = timeProvider.CreateTimer(
+            OnTimerElapsed,
+            null,
+            Timeout.InfiniteTimeSpan,
+            Timeout.InfiniteTimeSpan);
     }
 
     public void Schedule(DateTimeOffset? dueAt, DateTimeOffset now)
