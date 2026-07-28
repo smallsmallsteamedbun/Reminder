@@ -71,7 +71,9 @@ public sealed class EventViewModel : ObservableObject
     private readonly ReminderEngine _engine;
     private ReminderEventSnapshot _snapshot;
     private string _nameInput;
-    private string _intervalInput;
+    private string _intervalDaysInput;
+    private string _intervalHoursInput;
+    private string _intervalMinutesInput;
     private string _yearInput;
     private string _monthInput;
     private string _dayInput;
@@ -96,6 +98,9 @@ public sealed class EventViewModel : ObservableObject
     private FixedSystemPolicyChoice _selectedFixedSystemPolicy;
     private SystemNotificationChoice _selectedFixedSystemNotification;
     private SystemNotificationChoice _selectedScheduledSystemNotification;
+    private bool _showIntervalDays;
+    private bool _showIntervalHours;
+    private bool _intervalInputDirty;
     private bool _synchronizing;
 
     public EventViewModel(
@@ -106,7 +111,12 @@ public sealed class EventViewModel : ObservableObject
         _engine = engine;
         _snapshot = snapshot;
         _nameInput = snapshot.Name;
-        _intervalInput = FormatInteger(snapshot.IntervalMinutes);
+        var intervalParts = SplitInterval(snapshot.IntervalMinutes);
+        _intervalDaysInput = FormatInteger(intervalParts.Days);
+        _intervalHoursInput = FormatInteger(intervalParts.Hours);
+        _intervalMinutesInput = FormatInteger(intervalParts.Minutes);
+        _showIntervalDays = intervalParts.ShowDays;
+        _showIntervalHours = intervalParts.ShowHours;
         _yearInput = FormatInteger(GetYear(snapshot));
         _monthInput = FormatInteger(GetMonth(snapshot));
         _dayInput = FormatInteger(GetDay(snapshot));
@@ -176,16 +186,52 @@ public sealed class EventViewModel : ObservableObject
         }
     }
 
-    public string IntervalInput
+    public string IntervalDaysInput
     {
-        get => _intervalInput;
+        get => _intervalDaysInput;
         set
         {
-            if (SetProperty(ref _intervalInput, value) && IntervalError.Length != 0)
+            if (SetProperty(ref _intervalDaysInput, value))
             {
-                IntervalError = string.Empty;
+                MarkIntervalInputDirty();
             }
         }
+    }
+
+    public string IntervalHoursInput
+    {
+        get => _intervalHoursInput;
+        set
+        {
+            if (SetProperty(ref _intervalHoursInput, value))
+            {
+                MarkIntervalInputDirty();
+            }
+        }
+    }
+
+    public string IntervalMinutesInput
+    {
+        get => _intervalMinutesInput;
+        set
+        {
+            if (SetProperty(ref _intervalMinutesInput, value))
+            {
+                MarkIntervalInputDirty();
+            }
+        }
+    }
+
+    public bool ShowIntervalDays
+    {
+        get => _showIntervalDays;
+        private set => SetProperty(ref _showIntervalDays, value);
+    }
+
+    public bool ShowIntervalHours
+    {
+        get => _showIntervalHours;
+        private set => SetProperty(ref _showIntervalHours, value);
     }
 
     public string YearInput
@@ -616,8 +662,10 @@ public sealed class EventViewModel : ObservableObject
 
     public void CommitInterval()
     {
-        if (!ReminderInputValidator.TryValidateInterval(
-                IntervalInput,
+        if (!ReminderInputValidator.TryValidateIntervalParts(
+                IntervalDaysInput,
+                IntervalHoursInput,
+                IntervalMinutesInput,
                 out var value,
                 out var error))
         {
@@ -632,7 +680,7 @@ public sealed class EventViewModel : ObservableObject
         }
 
         IntervalError = string.Empty;
-        IntervalInput = FormatInteger(value);
+        ApplyCanonicalInterval(value);
     }
 
     public void CommitScheduleParts()
@@ -789,8 +837,8 @@ public sealed class EventViewModel : ObservableObject
     {
         var previousSnapshot = _snapshot;
         var nameInputWasUnmodified = NameInput == previousSnapshot.Name;
-        var intervalInputWasUnmodified =
-            IntervalInput == FormatInteger(previousSnapshot.IntervalMinutes);
+        var intervalChanged =
+            snapshot.IntervalMinutes != previousSnapshot.IntervalMinutes;
         var yearInputWasUnmodified =
             YearInput == FormatInteger(GetYear(previousSnapshot));
         var monthInputWasUnmodified =
@@ -834,9 +882,9 @@ public sealed class EventViewModel : ObservableObject
                 NameInput = snapshot.Name;
             }
 
-            if (intervalInputWasUnmodified)
+            if (!_intervalInputDirty || intervalChanged)
             {
-                IntervalInput = FormatInteger(snapshot.IntervalMinutes);
+                ApplyCanonicalInterval(snapshot.IntervalMinutes);
             }
 
             if (yearInputWasUnmodified)
@@ -952,6 +1000,43 @@ public sealed class EventViewModel : ObservableObject
         }
     }
 
+    private void MarkIntervalInputDirty()
+    {
+        if (!_synchronizing)
+        {
+            _intervalInputDirty = true;
+        }
+
+        if (IntervalError.Length != 0)
+        {
+            IntervalError = string.Empty;
+        }
+    }
+
+    private void ApplyCanonicalInterval(int totalMinutes)
+    {
+        var parts = SplitInterval(totalMinutes);
+        IntervalDaysInput = FormatInteger(parts.Days);
+        IntervalHoursInput = FormatInteger(parts.Hours);
+        IntervalMinutesInput = FormatInteger(parts.Minutes);
+        ShowIntervalDays = parts.ShowDays;
+        ShowIntervalHours = parts.ShowHours;
+        _intervalInputDirty = false;
+    }
+
+    private static IntervalParts SplitInterval(int totalMinutes)
+    {
+        var days = totalMinutes / (24 * 60);
+        var hours = totalMinutes % (24 * 60) / 60;
+        var minutes = totalMinutes % 60;
+        return new IntervalParts(
+            days,
+            hours,
+            totalMinutes < 60 ? totalMinutes : minutes,
+            ShowDays: totalMinutes >= 24 * 60,
+            ShowHours: totalMinutes >= 60);
+    }
+
     private static string FormatCountdown(TimeSpan remaining)
     {
         var totalSeconds = Math.Max(0, (long)Math.Ceiling(remaining.TotalSeconds));
@@ -977,6 +1062,13 @@ public sealed class EventViewModel : ObservableObject
     {
         return value.ToString(CultureInfo.InvariantCulture);
     }
+
+    private readonly record struct IntervalParts(
+        int Days,
+        int Hours,
+        int Minutes,
+        bool ShowDays,
+        bool ShowHours);
 
     private static string FormatClockPart(int value)
     {

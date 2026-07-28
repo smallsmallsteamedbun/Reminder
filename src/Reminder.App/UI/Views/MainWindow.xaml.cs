@@ -29,6 +29,7 @@ public partial class MainWindow : Window
     private HwndSource? _windowSource;
     private EventViewModel? _highlightedEvent;
     private bool _allowApplicationExit;
+    private bool _isCommittingInterval;
 
     public MainWindow(MainViewModel viewModel)
     {
@@ -167,6 +168,37 @@ public partial class MainWindow : Window
         CommitTextBox(sender);
         Keyboard.ClearFocus();
         e.Handled = true;
+    }
+
+    private void IntervalTextBox_OnKeyDown(
+        object sender,
+        System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter)
+        {
+            return;
+        }
+
+        CommitInterval(sender as FrameworkElement);
+        e.Handled = true;
+    }
+
+    private void IntervalInputGroup_OnLostKeyboardFocus(
+        object sender,
+        KeyboardFocusChangedEventArgs e)
+    {
+        if (sender is not FrameworkElement group)
+        {
+            return;
+        }
+
+        if (e.NewFocus is DependencyObject newFocus &&
+            IsVisualDescendant(group, newFocus))
+        {
+            return;
+        }
+
+        CommitInterval(group);
     }
 
     private void EditableTextBox_OnGotKeyboardFocus(
@@ -608,14 +640,46 @@ public partial class MainWindow : Window
         {
             eventViewModel.CommitName();
         }
-        else if (Equals(textBox.Tag, "Interval"))
-        {
-            eventViewModel.CommitInterval();
-        }
         else if (Equals(textBox.Tag, "SchedulePart"))
         {
             eventViewModel.CommitScheduleParts();
         }
+    }
+
+    private void CommitInterval(FrameworkElement? source)
+    {
+        if (_isCommittingInterval ||
+            source?.DataContext is not EventViewModel eventViewModel)
+        {
+            return;
+        }
+
+        _isCommittingInterval = true;
+        try
+        {
+            eventViewModel.CommitInterval();
+        }
+        finally
+        {
+            _isCommittingInterval = false;
+        }
+    }
+
+    private static bool IsVisualDescendant(
+        DependencyObject ancestor,
+        DependencyObject descendant)
+    {
+        for (var current = descendant;
+             current is not null;
+             current = VisualTreeHelper.GetParent(current))
+        {
+            if (ReferenceEquals(current, ancestor))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void MoveCaretToEnd(TextBox textBox)

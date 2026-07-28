@@ -40,23 +40,66 @@ public static class ReminderInputValidator
 
     public static bool TryValidateInterval(string? input, out int value, out string error)
     {
-        if (!int.TryParse(
-                input,
-                NumberStyles.None,
-                CultureInfo.InvariantCulture,
-                out value))
+        return TryValidateIntervalParts(
+            "0",
+            "0",
+            input,
+            out value,
+            out error);
+    }
+
+    public static bool TryValidateIntervalParts(
+        string? daysInput,
+        string? hoursInput,
+        string? minutesInput,
+        out int totalMinutes,
+        out string error)
+    {
+        totalMinutes = 0;
+        if (!TryParseIntervalPart(
+                daysInput,
+                maximumLength: 3,
+                out var days) ||
+            !TryParseIntervalPart(
+                hoursInput,
+                maximumLength: 4,
+                out var hours) ||
+            !TryParseIntervalPart(
+                minutesInput,
+                maximumLength: 6,
+                out var minutes))
         {
-            error = "请输入整数分钟";
+            error = "天、小时和分钟请输入非负整数";
             return false;
         }
 
-        if (value is < ReminderDefaults.MinimumIntervalMinutes or > ReminderDefaults.MaximumIntervalMinutes)
+        long calculatedMinutes;
+        try
         {
-            error =
-                $"请输入 {ReminderDefaults.MinimumIntervalMinutes}–{ReminderDefaults.MaximumIntervalMinutes} 分钟";
+            calculatedMinutes = checked(
+                days * 24L * 60L +
+                hours * 60L +
+                minutes);
+        }
+        catch (OverflowException)
+        {
+            error = "提醒间隔不能超过 365 天";
             return false;
         }
 
+        if (calculatedMinutes < ReminderDefaults.MinimumIntervalMinutes)
+        {
+            error = "提醒间隔至少为 1 分钟";
+            return false;
+        }
+
+        if (calculatedMinutes > ReminderDefaults.MaximumIntervalMinutes)
+        {
+            error = "提醒间隔不能超过 365 天";
+            return false;
+        }
+
+        totalMinutes = (int)calculatedMinutes;
         error = string.Empty;
         return true;
     }
@@ -263,5 +306,29 @@ public static class ReminderInputValidator
             TimeZoneInfo.Local.GetUtcOffset(localTime));
         error = string.Empty;
         return true;
+    }
+
+    private static bool TryParseIntervalPart(
+        string? input,
+        int maximumLength,
+        out long value)
+    {
+        value = 0;
+        if (string.IsNullOrEmpty(input))
+        {
+            return true;
+        }
+
+        if (input.Length > maximumLength ||
+            input.Any(character => character is < '0' or > '9'))
+        {
+            return false;
+        }
+
+        return long.TryParse(
+            input,
+            NumberStyles.None,
+            CultureInfo.InvariantCulture,
+            out value);
     }
 }
