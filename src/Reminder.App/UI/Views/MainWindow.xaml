@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="clr-namespace:Reminder.App.UI.Controls"
     xmlns:viewModels="clr-namespace:Reminder.App.UI.ViewModels"
     Title="Reminder"
     Width="1180"
@@ -16,6 +17,57 @@
     Foreground="{StaticResource TextPrimaryBrush}"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
+
+    <Window.Resources>
+        <Style x:Key="HomeSlotContentStyle" TargetType="ContentControl">
+            <Setter Property="Visibility" Value="Visible" />
+            <Style.Triggers>
+                <Trigger Property="Content" Value="{x:Null}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <DataTemplate x:Key="HomeEventCardTemplate">
+            <Button
+                Width="300"
+                Height="82"
+                Padding="16,11"
+                HorizontalContentAlignment="Stretch"
+                AutomationProperties.Name="{Binding Name}"
+                Click="HomeEventCard_OnClick"
+                MouseEnter="HomeEventCard_OnMouseEnter"
+                MouseLeave="HomeEventCard_OnMouseLeave"
+                Style="{StaticResource HomeEventCardButtonStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock
+                            FontSize="15"
+                            FontWeight="SemiBold"
+                            Text="{Binding Name}"
+                            TextTrimming="CharacterEllipsis" />
+                        <TextBlock
+                            Margin="0,5,0,0"
+                            FontSize="11"
+                            Foreground="{StaticResource TextSecondaryBrush}"
+                            Text="{Binding StatusText}"
+                            TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <TextBlock
+                        Grid.Column="1"
+                        Margin="14,0,0,0"
+                        VerticalAlignment="Center"
+                        FontSize="16"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource PrimaryBrush}"
+                        Text="{Binding CountdownText}" />
+                </Grid>
+            </Button>
+        </DataTemplate>
+    </Window.Resources>
 
     <Grid Background="{StaticResource PageBackgroundBrush}">
         <Grid.RowDefinitions>
@@ -31,6 +83,11 @@
             BorderBrush="{StaticResource BorderBrush}"
             BorderThickness="0,0,0,1">
             <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal">
                     <Border
                         Width="40"
@@ -45,16 +102,19 @@
                             Foreground="White"
                             Text="R" />
                     </Border>
-                    <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                    <StackPanel
+                        Width="160"
+                        Margin="12,0,0,0"
+                        VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock
                                 VerticalAlignment="Center"
-                                FontSize="20"
+                                FontSize="19"
                                 FontWeight="SemiBold"
                                 Text="{Binding AppName}" />
                             <Border
-                                Margin="10,0,0,0"
-                                Padding="9,4"
+                                Margin="6,0,0,0"
+                                Padding="5,4"
                                 VerticalAlignment="Center"
                                 Background="{StaticResource PrimarySubtleBrush}"
                                 CornerRadius="11">
@@ -67,41 +127,107 @@
                         </StackPanel>
                         <TextBlock
                             Margin="0,2,0,0"
-                            FontSize="12"
+                            FontSize="11"
                             Foreground="{StaticResource TextSecondaryBrush}"
-                            Text="轻量、安静地照顾你的工作节奏" />
+                            Text="轻量、安静地照顾你的工作节奏"
+                            TextTrimming="CharacterEllipsis" />
                     </StackPanel>
                 </StackPanel>
+
+                <Border
+                    Grid.Column="1"
+                    Padding="5"
+                    VerticalAlignment="Center"
+                    Background="{StaticResource SurfaceSubtleBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12">
+                    <StackPanel Orientation="Horizontal">
+                        <Button
+                            x:Name="HomeNavigationButton"
+                            AutomationProperties.AutomationId="HomeNavigationButton"
+                            Click="HomeNavigationButton_OnClick"
+                            Content="主页"
+                            Style="{StaticResource NavigationButtonStyle}" />
+                        <Button
+                            x:Name="EventsNavigationButton"
+                            Margin="2,0"
+                            AutomationProperties.AutomationId="EventsNavigationButton"
+                            Click="EventsNavigationButton_OnClick"
+                            Content="事件"
+                            Style="{StaticResource NavigationButtonStyle}" />
+                        <Button
+                            x:Name="SettingsNavigationButton"
+                            AutomationProperties.AutomationId="SettingsNavigationButton"
+                            Click="SettingsNavigationButton_OnClick"
+                            Content="设置"
+                            Style="{StaticResource NavigationButtonStyle}" />
+                    </StackPanel>
+                </Border>
 
             </Grid>
         </Border>
 
-        <Grid Grid.Row="1" Margin="28,24,28,18">
+        <Grid Grid.Row="1" Margin="28,18,28,18">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0">
+            <Grid x:Name="SharedActionBar" Grid.Row="0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                <StackPanel
+                    x:Name="EventSummaryPanel"
+                    Grid.Column="0"
+                    VerticalAlignment="Center">
                     <TextBlock
-                        FontSize="26"
-                        FontWeight="SemiBold"
-                        Text="提醒事件" />
-                    <TextBlock
-                        Margin="0,5,0,0"
                         FontSize="13"
                         Foreground="{StaticResource TextSecondaryBrush}"
                         Text="{Binding EventSummary}" />
                 </StackPanel>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <StackPanel
+                    x:Name="GlobalActionsPanel"
+                    Grid.Column="1"
+                    Orientation="Horizontal">
+                    <Border
+                        Margin="0,0,10,0"
+                        Padding="10,0"
+                        VerticalAlignment="Stretch"
+                        Background="{StaticResource SurfaceBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Visibility="{Binding IsGlobalPaused, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock
+                                Margin="0,0,10,0"
+                                VerticalAlignment="Center"
+                                FontSize="13"
+                                FontWeight="SemiBold"
+                                Foreground="{StaticResource TextSecondaryBrush}"
+                                Text="全部暂停" />
+                            <ComboBox
+                                Width="142"
+                                Margin="0,4"
+                                AutomationProperties.Name="全部暂停时长"
+                                DisplayMemberPath="Label"
+                                ItemsSource="{Binding GlobalPauseChoices}"
+                                SelectedItem="{Binding SelectedGlobalPauseChoice, Mode=TwoWay}"
+                                Style="{StaticResource InputComboBoxStyle}" />
+                            <TextBlock
+                                Margin="10,0,0,0"
+                                VerticalAlignment="Center"
+                                FontSize="12"
+                                Foreground="{StaticResource PrimaryBrush}"
+                                Text="{Binding GlobalPauseRemainingText}"
+                                Visibility="{Binding ShowGlobalPauseCountdown, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                        </StackPanel>
+                    </Border>
                     <Button
                         x:Name="GlobalPauseToggleButton"
                         AutomationProperties.AutomationId="GlobalPauseToggleButton"
@@ -138,6 +264,7 @@
                         </Button.ToolTip>
                     </Button>
                     <Button
+                        x:Name="AddEventButton"
                         Margin="12,0,0,0"
                         AutomationProperties.AutomationId="AddEventButton"
                         Command="{Binding AddEventCommand}"
@@ -146,48 +273,115 @@
                 </StackPanel>
             </Grid>
 
-            <Border
-                Grid.Row="1"
-                Margin="0,16,0,0"
-                Padding="14,10"
-                Background="{StaticResource SurfaceBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
-                BorderThickness="1"
-                CornerRadius="8"
-                Visibility="{Binding IsGlobalPaused, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock
+            <Grid x:Name="PageHost" Grid.Row="1" Margin="0,14,0,0">
+                <Grid
+                    x:Name="HomePage"
+                    AutomationProperties.AutomationId="HomePage">
+                    <Viewbox
+                        HorizontalAlignment="Center"
                         VerticalAlignment="Center"
-                        FontSize="13"
-                        FontWeight="SemiBold"
-                        Text="全部暂停已开启" />
-                    <TextBlock
-                        Margin="18,0,8,0"
-                        VerticalAlignment="Center"
-                        FontSize="13"
-                        Foreground="{StaticResource TextSecondaryBrush}"
-                        Text="暂停" />
-                    <ComboBox
-                        Width="150"
-                        AutomationProperties.Name="全部暂停时长"
-                        DisplayMemberPath="Label"
-                        ItemsSource="{Binding GlobalPauseChoices}"
-                        SelectedItem="{Binding SelectedGlobalPauseChoice, Mode=TwoWay}"
-                        Style="{StaticResource InputComboBoxStyle}" />
-                    <TextBlock
-                        Margin="14,0,0,0"
-                        VerticalAlignment="Center"
-                        FontSize="13"
-                        Foreground="{StaticResource PrimaryBrush}"
-                        Text="{Binding GlobalPauseRemainingText}"
-                        Visibility="{Binding ShowGlobalPauseCountdown, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                </StackPanel>
-            </Border>
+                        Stretch="Uniform"
+                        StretchDirection="DownOnly">
+                    <Grid
+                        Width="800"
+                        Height="430">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="430" />
+                            <ColumnDefinition Width="350" />
+                        </Grid.ColumnDefinitions>
+
+                        <Button
+                            x:Name="HomeTimerButton"
+                            Width="390"
+                            Height="390"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Click="HomeTimerButton_OnClick"
+                            Style="{StaticResource CircleButtonStyle}">
+                            <Grid>
+                                <controls:CountdownRingsControl
+                                    x:Name="HomeCountdownRings"
+                                    RemainingSeconds="{Binding SelectedHomeEvent.RemainingSeconds}" />
+                                <StackPanel
+                                    Width="230"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center">
+                                    <TextBlock
+                                        HorizontalAlignment="Center"
+                                        FontSize="14"
+                                        Foreground="{StaticResource TextSecondaryBrush}"
+                                        Text="{Binding SelectedHomeEvent.StatusText}"
+                                        TextAlignment="Center" />
+                                    <TextBlock
+                                        Margin="0,12,0,0"
+                                        HorizontalAlignment="Center"
+                                        FontSize="28"
+                                        FontWeight="SemiBold"
+                                        Text="{Binding SelectedHomeEvent.CountdownText}"
+                                        TextAlignment="Center"
+                                        TextWrapping="Wrap" />
+                                    <TextBlock
+                                        Margin="0,12,0,0"
+                                        HorizontalAlignment="Center"
+                                        FontSize="17"
+                                        FontWeight="SemiBold"
+                                        Foreground="{StaticResource PrimaryBrush}"
+                                        Text="{Binding SelectedHomeEvent.Name}"
+                                        TextAlignment="Center"
+                                        TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <TextBlock
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    FontSize="17"
+                                    Foreground="{StaticResource TextSecondaryBrush}"
+                                    Text="暂无正在计时的事件"
+                                    Visibility="{Binding HasHomeEvents, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+                            </Grid>
+                        </Button>
+
+                        <Grid
+                            Grid.Column="1"
+                            Height="320"
+                            Margin="12,0,0,0"
+                            ClipToBounds="False"
+                            VerticalAlignment="Center">
+                            <ContentControl
+                                x:Name="HomeTopCard"
+                                Margin="0,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top"
+                                Content="{Binding HomeTopEvent}"
+                                ContentTemplate="{StaticResource HomeEventCardTemplate}"
+                                Style="{StaticResource HomeSlotContentStyle}" />
+                            <ContentControl
+                                x:Name="HomeMiddleCard"
+                                Margin="34,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Content="{Binding HomeMiddleEvent}"
+                                ContentTemplate="{StaticResource HomeEventCardTemplate}"
+                                Style="{StaticResource HomeSlotContentStyle}" />
+                            <ContentControl
+                                x:Name="HomeBottomCard"
+                                Margin="0,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Bottom"
+                                Content="{Binding HomeBottomEvent}"
+                                ContentTemplate="{StaticResource HomeEventCardTemplate}"
+                                Style="{StaticResource HomeSlotContentStyle}" />
+                        </Grid>
+                    </Grid>
+                    </Viewbox>
+                </Grid>
+
+                <Grid
+                    x:Name="EventPage"
+                    AutomationProperties.AutomationId="EventPage"
+                    Visibility="Collapsed">
 
             <ScrollViewer
                 x:Name="EventListScrollViewer"
-                Grid.Row="2"
-                Margin="0,14,0,0"
                 HorizontalScrollBarVisibility="Disabled"
                 PreviewMouseWheel="EventListScrollViewer_OnPreviewMouseWheel"
                 VerticalScrollBarVisibility="Auto">
@@ -337,9 +531,9 @@
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="196" />
                                                     <ColumnDefinition Width="14" />
-                                                    <ColumnDefinition Width="536" />
+                                                    <ColumnDefinition Width="520" />
                                                     <ColumnDefinition Width="14" />
-                                                    <ColumnDefinition Width="108" />
+                                                    <ColumnDefinition Width="124" />
                                                     <ColumnDefinition Width="14" />
                                                     <ColumnDefinition Width="182" />
                                                 </Grid.ColumnDefinitions>
@@ -647,7 +841,7 @@
                                                         Foreground="{StaticResource TextMutedBrush}"
                                                         Text="终止次数" />
                                                     <ComboBox
-                                                        Width="104"
+                                                        Width="120"
                                                         HorizontalAlignment="Left"
                                                         AutomationProperties.Name="终止次数"
                                                         DisplayMemberPath="Label"
@@ -704,6 +898,51 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
+                </Grid>
+
+                <Grid
+                    x:Name="SettingsPage"
+                    AutomationProperties.AutomationId="SettingsPage"
+                    Visibility="Collapsed">
+                    <Border
+                        MaxWidth="760"
+                        Margin="0,12,0,0"
+                        Padding="26"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Top"
+                        Background="{StaticResource SurfaceBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="12">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="250" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,32,0">
+                                <TextBlock
+                                    FontSize="19"
+                                    FontWeight="SemiBold"
+                                    Text="渲染模式" />
+                                <TextBlock
+                                    Margin="0,8,0,0"
+                                    FontSize="13"
+                                    Foreground="{StaticResource TextSecondaryBrush}"
+                                    Text="兼容模式使用 CPU 绘制界面；硬件优先模式由 WPF 根据显卡能力选择渲染路径。"
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ComboBox
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="渲染模式"
+                                DisplayMemberPath="Label"
+                                ItemsSource="{Binding RenderingModeChoices}"
+                                SelectedItem="{Binding SelectedRenderingModeChoice, Mode=TwoWay}"
+                                Style="{StaticResource InputComboBoxStyle}" />
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
         </Grid>
 
         <Border

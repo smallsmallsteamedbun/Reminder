@@ -1,35 +1,39 @@
 using Reminder.App.Logic.Models;
 using Reminder.App.Logic.State;
+using Reminder.App.SystemModule.Settings;
 
 namespace Reminder.App.SystemModule.Persistence;
 
 internal static class ReminderStateMapper
 {
     public static ReminderStateDocument ToDocument(
-        ReminderEngineState state)
+        ReminderPersistedState state)
     {
         ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(state.EngineState);
+        ArgumentNullException.ThrowIfNull(state.Settings);
 
         return new ReminderStateDocument
         {
             Version = ReminderStateDocument.CurrentVersion,
-            SavedAt = state.SavedAt,
-            Events = state.Events.Select(ToDocument).ToList(),
+            SavedAt = state.EngineState.SavedAt,
+            Events = state.EngineState.Events.Select(ToDocument).ToList(),
             GlobalPause = new ReminderGlobalPauseDocument
             {
-                IsPaused = state.GlobalPause.IsPaused,
-                Duration = state.GlobalPause.Duration,
+                IsPaused = state.EngineState.GlobalPause.IsPaused,
+                Duration = state.EngineState.GlobalPause.Duration,
                 RemainingTicks =
-                    state.GlobalPause.Remaining?.Ticks
+                    state.EngineState.GlobalPause.Remaining?.Ticks
             },
             PendingMissedEventIds =
-                state.PendingMissedEventIds.ToList()
+                state.EngineState.PendingMissedEventIds.ToList(),
+            RenderingMode = state.Settings.RenderingMode
         };
     }
 
-    public static bool TryToEngineState(
+    public static bool TryToPersistedState(
         ReminderStateDocument? document,
-        out ReminderEngineState state,
+        out ReminderPersistedState state,
         out string errorMessage)
     {
         state = null!;
@@ -40,7 +44,7 @@ internal static class ReminderStateMapper
             return false;
         }
 
-        if (document.Version != ReminderStateDocument.CurrentVersion)
+        if (document.Version is < 1 or > ReminderStateDocument.CurrentVersion)
         {
             errorMessage =
                 $"不支持的数据结构版本：{document.Version}。";
@@ -57,22 +61,37 @@ internal static class ReminderStateMapper
 
         try
         {
-            state = new ReminderEngineState
+            if (!Enum.IsDefined(document.RenderingMode))
             {
-                SavedAt = document.SavedAt,
-                Events = document.Events.Select(ToEngineState).ToArray(),
-                GlobalPause = new ReminderEngineGlobalPauseState
+                throw new ArgumentException("渲染模式无效。");
+            }
+
+            state = new ReminderPersistedState
+            {
+                EngineState = new ReminderEngineState
                 {
-                    IsPaused = document.GlobalPause.IsPaused,
-                    Duration = document.GlobalPause.Duration,
-                    Remaining =
-                        document.GlobalPause.RemainingTicks is null
-                            ? null
-                            : TimeSpan.FromTicks(
-                                document.GlobalPause.RemainingTicks.Value)
+                    SavedAt = document.SavedAt,
+                    Events = document.Events.Select(ToEngineState).ToArray(),
+                    GlobalPause = new ReminderEngineGlobalPauseState
+                    {
+                        IsPaused = document.GlobalPause.IsPaused,
+                        Duration = document.GlobalPause.Duration,
+                        Remaining =
+                            document.GlobalPause.RemainingTicks is null
+                                ? null
+                                : TimeSpan.FromTicks(
+                                    document.GlobalPause.RemainingTicks.Value)
+                    },
+                    PendingMissedEventIds =
+                        document.PendingMissedEventIds.ToArray()
                 },
-                PendingMissedEventIds =
-                    document.PendingMissedEventIds.ToArray()
+                Settings = new ReminderApplicationSettings
+                {
+                    RenderingMode =
+                        document.Version == 1
+                            ? ReminderRenderingMode.HardwarePreferred
+                            : document.RenderingMode
+                }
             };
             return true;
         }

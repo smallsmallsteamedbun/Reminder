@@ -1,10 +1,11 @@
 using Reminder.App.Logic.Models;
+using Reminder.App.SystemModule.Settings;
 
 namespace Reminder.App.SystemModule.Persistence;
 
 internal sealed record ReminderStateDocument
 {
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
 
     public required int Version { get; init; }
 
@@ -15,6 +16,9 @@ internal sealed record ReminderStateDocument
     public required ReminderGlobalPauseDocument GlobalPause { get; init; }
 
     public required List<Guid> PendingMissedEventIds { get; init; }
+
+    public ReminderRenderingMode RenderingMode { get; init; } =
+        ReminderRenderingMode.HardwarePreferred;
 }
 
 internal sealed record ReminderEventDocument

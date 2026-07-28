@@ -7,6 +7,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Reminder.App.Logic.Services;
+using Reminder.App.SystemModule.Settings;
 using Reminder.App.SystemModule.Runtime;
 using Reminder.App.UI.Interactions;
 using Reminder.App.UI.ViewModels;
@@ -15,6 +16,8 @@ using ComboBox = System.Windows.Controls.ComboBox;
 using DataFormats = System.Windows.DataFormats;
 using TextBox = System.Windows.Controls.TextBox;
 using ToolTip = System.Windows.Controls.ToolTip;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using Brush = System.Windows.Media.Brush;
 
 namespace Reminder.App.UI.Views;
 
@@ -26,16 +29,38 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _newEventHighlightTimer;
     private readonly SmoothScrollController _eventListScroller;
     private readonly ListReflowAnimator _eventListReflowAnimator;
+    private readonly PageNavigationController _pageNavigator;
+    private readonly ContentControl[] _homeCardSlots;
     private HwndSource? _windowSource;
     private EventViewModel? _highlightedEvent;
     private bool _allowApplicationExit;
     private bool _isCommittingInterval;
+    private Guid? _revealWhenVisibleEventId;
 
     public MainWindow(MainViewModel viewModel)
     {
         _viewModel = viewModel;
         DataContext = viewModel;
         InitializeComponent();
+        _homeCardSlots =
+        [
+            HomeTopCard,
+            HomeMiddleCard,
+            HomeBottomCard
+        ];
+        _pageNavigator = new PageNavigationController(
+            HomePage,
+            EventPage,
+            SettingsPage,
+            GlobalActionsPanel,
+            EventSummaryPanel,
+            AddEventButton,
+            HomeNavigationButton,
+            EventsNavigationButton,
+            SettingsNavigationButton,
+            (Brush)FindResource("PrimarySubtleBrush"),
+            (Brush)FindResource("PrimaryBrush"),
+            (Brush)FindResource("TextSecondaryBrush"));
         AddHandler(
             Keyboard.GotKeyboardFocusEvent,
             new KeyboardFocusChangedEventHandler(
@@ -71,6 +96,10 @@ public partial class MainWindow : Window
 
         _viewModel.EventAdded += OnEventAdded;
         _viewModel.DeleteRequested += OnDeleteRequested;
+        _viewModel.RenderingModeChangeRequested +=
+            OnRenderingModeChangeRequested;
+        _viewModel.HomePresentationChanged +=
+            OnHomePresentationChanged;
 
         Loaded += (_, _) => StartUiRefresh();
         IsVisibleChanged += (_, _) =>
@@ -78,10 +107,23 @@ public partial class MainWindow : Window
             if (IsVisible)
             {
                 StartUiRefresh();
+                if (_revealWhenVisibleEventId is { } eventId)
+                {
+                    _revealWhenVisibleEventId = null;
+                    NavigateTo(ReminderPage.Events, eventId);
+                }
             }
             else
             {
                 _countdownRefreshTimer.Stop();
+                HomeCountdownRings.CompleteImmediately();
+                _pageNavigator.CompleteImmediately();
+                HomePresentationAnimator.CompleteImmediately(
+                    HomeTimerButton,
+                    _homeCardSlots,
+                    FindVisualDescendants<Button>(HomePage)
+                        .Where(item =>
+                            item.DataContext is HomeReminderViewModel));
                 _eventListScroller.CompleteImmediately();
                 _eventListReflowAnimator.CompleteImmediately();
                 Dispatcher.BeginInvoke(
@@ -90,6 +132,8 @@ public partial class MainWindow : Window
             }
         };
     }
+
+    public event Action? RestartRequested;
 
     public void ShowAndActivate()
     {
@@ -135,6 +179,10 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        _viewModel.RenderingModeChangeRequested -=
+            OnRenderingModeChangeRequested;
+        _viewModel.HomePresentationChanged -=
+            OnHomePresentationChanged;
         _windowSource?.RemoveHook(WindowMessageHook);
         _windowSource = null;
         base.OnClosed(e);
@@ -561,6 +609,137 @@ public partial class MainWindow : Window
         Dispatcher.BeginInvoke(
             () => RevealAndHighlightEvent(eventId),
             DispatcherPriority.Loaded);
+    }
+
+    private void HomeNavigationButton_OnClick(
+        object sender,
+        RoutedEventArgs e)
+    {
+        NavigateTo(ReminderPage.Home);
+    }
+
+    private void EventsNavigationButton_OnClick(
+        object sender,
+        RoutedEventArgs e)
+    {
+        NavigateTo(ReminderPage.Events);
+    }
+
+    private void SettingsNavigationButton_OnClick(
+        object sender,
+        RoutedEventArgs e)
+    {
+        NavigateTo(ReminderPage.Settings);
+    }
+
+    private void HomeEventCard_OnMouseEnter(
+        object sender,
+        MouseEventArgs e)
+    {
+        if (sender is not Button
+            {
+                DataContext: HomeReminderViewModel homeEvent
+            } button)
+        {
+            return;
+        }
+
+        _viewModel.PreviewHomeEvent(homeEvent.Id);
+        HomeCountdownRings.CompleteImmediately();
+        HomePresentationAnimator.AnimateCard(button, isRaised: true);
+        HomePresentationAnimator.PulseTimer(HomeTimerButton);
+    }
+
+    private void HomeEventCard_OnMouseLeave(
+        object sender,
+        MouseEventArgs e)
+    {
+        if (sender is Button button)
+        {
+            HomePresentationAnimator.AnimateCard(
+                button,
+                isRaised: false);
+        }
+
+        _viewModel.PreviewHomeEvent(null);
+        HomeCountdownRings.CompleteImmediately();
+        HomePresentationAnimator.PulseTimer(HomeTimerButton);
+    }
+
+    private void HomeEventCard_OnClick(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (sender is Button
+            {
+                DataContext: HomeReminderViewModel homeEvent
+            })
+        {
+            NavigateTo(ReminderPage.Events, homeEvent.Id);
+        }
+    }
+
+    private void HomeTimerButton_OnClick(
+        object sender,
+        RoutedEventArgs e)
+    {
+        NavigateTo(
+            ReminderPage.Events,
+            _viewModel.SelectedHomeEvent?.Id);
+    }
+
+    private void OnRenderingModeChangeRequested(
+        ReminderRenderingMode renderingMode)
+    {
+        var dialog = new RenderingModeRestartDialog
+        {
+            Owner = this
+        };
+        _ = dialog.ShowDialog();
+        if (dialog.RestartNow)
+        {
+            RestartRequested?.Invoke();
+        }
+    }
+
+    private void OnHomePresentationChanged(
+        IReadOnlyCollection<Guid> changedEventIds)
+    {
+        if (_pageNavigator.CurrentPage == ReminderPage.Home &&
+            IsVisible)
+        {
+            HomeCountdownRings.CompleteImmediately();
+            HomePresentationAnimator.PulseCards(
+                _homeCardSlots,
+                changedEventIds);
+            HomePresentationAnimator.PulseTimer(HomeTimerButton);
+        }
+    }
+
+    private void NavigateTo(
+        ReminderPage page,
+        Guid? revealEventId = null)
+    {
+        Action? completed = null;
+        if (page == ReminderPage.Events &&
+            revealEventId is not null)
+        {
+            completed = () =>
+            {
+                if (!IsVisible)
+                {
+                    _revealWhenVisibleEventId = revealEventId;
+                    return;
+                }
+
+                _ = Dispatcher.BeginInvoke(
+                    () => RevealAndHighlightEvent(
+                        revealEventId.Value),
+                    DispatcherPriority.Loaded);
+            };
+        }
+
+        _pageNavigator.Navigate(page, completed);
     }
 
     private void OnDeleteRequested(EventViewModel eventViewModel)

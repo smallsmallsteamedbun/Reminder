@@ -1,5 +1,3 @@
-using Reminder.App.Logic.State;
-
 namespace Reminder.App.SystemModule.Persistence;
 
 public enum ReminderStateLoadStatus
@@ -14,7 +12,7 @@ public sealed record ReminderStateLoadResult
 {
     public required ReminderStateLoadStatus Status { get; init; }
 
-    public required ReminderEngineState? State { get; init; }
+    public required ReminderPersistedState? State { get; init; }
 
     public required string ErrorMessage { get; init; }
 

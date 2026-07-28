@@ -34,6 +34,8 @@ public sealed record ReminderEventSnapshot
 
     public required bool IsAwaitingAction { get; init; }
 
+    public required bool HasPendingMissedOccurrence { get; init; }
+
     public required bool CanRestart { get; init; }
 
     public required bool IsExpired { get; init; }

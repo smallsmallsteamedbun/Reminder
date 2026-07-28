@@ -1,4 +1,5 @@
 using Reminder.App.Logic.Services;
+using Reminder.App.SystemModule.Settings;
 
 namespace Reminder.App.SystemModule.Persistence;
 
@@ -8,6 +9,7 @@ public sealed class ReminderPersistenceCoordinator : IDisposable
         TimeSpan.FromHours(1);
     private readonly ReminderEngine _engine;
     private readonly ProtectedReminderStateStore _store;
+    private readonly ReminderApplicationSettingsService _settings;
     private readonly SemaphoreSlim _saveGate = new(1, 1);
     private readonly System.Threading.Timer _timer;
     private int _immediateSaveRequested;
@@ -17,16 +19,29 @@ public sealed class ReminderPersistenceCoordinator : IDisposable
 
     public ReminderPersistenceCoordinator(
         ReminderEngine engine,
-        ProtectedReminderStateStore store)
+        ProtectedReminderStateStore store,
+        ReminderApplicationSettingsService settings)
     {
         _engine = engine;
         _store = store;
+        _settings = settings;
         _engine.DurableStateChanged += OnDurableStateChanged;
+        _settings.SettingsChanged += OnDurableStateChanged;
         _timer = new System.Threading.Timer(
             _ => SaveCheckpoint(),
             null,
             Timeout.InfiniteTimeSpan,
             Timeout.InfiniteTimeSpan);
+    }
+
+    public ReminderPersistenceCoordinator(
+        ReminderEngine engine,
+        ProtectedReminderStateStore store)
+        : this(
+            engine,
+            store,
+            new ReminderApplicationSettingsService())
+    {
     }
 
     public void Start()
@@ -54,7 +69,7 @@ public sealed class ReminderPersistenceCoordinator : IDisposable
         _saveGate.Wait();
         try
         {
-            return _store.Save(_engine.ExportState());
+            return SaveCurrentState();
         }
         finally
         {
@@ -70,6 +85,7 @@ public sealed class ReminderPersistenceCoordinator : IDisposable
         }
 
         _engine.DurableStateChanged -= OnDurableStateChanged;
+        _settings.SettingsChanged -= OnDurableStateChanged;
         _disposed = true;
         _timer.Dispose();
         _saveGate.Wait();
@@ -119,7 +135,7 @@ public sealed class ReminderPersistenceCoordinator : IDisposable
                 {
                     if (!_disposed)
                     {
-                        _ = _store.Save(_engine.ExportState());
+                        _ = SaveCurrentState();
                     }
                 }
                 finally
@@ -150,11 +166,21 @@ public sealed class ReminderPersistenceCoordinator : IDisposable
 
         try
         {
-            _ = _store.Save(_engine.ExportState());
+            _ = SaveCurrentState();
         }
         finally
         {
             _saveGate.Release();
         }
+    }
+
+    private ReminderStateSaveResult SaveCurrentState()
+    {
+        return _store.Save(
+            new ReminderPersistedState
+            {
+                EngineState = _engine.ExportState(),
+                Settings = _settings.Export()
+            });
     }
 }

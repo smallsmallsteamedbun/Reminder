@@ -3,11 +3,16 @@ using System.Windows.Threading;
 using Reminder.App.Logic.Models;
 using Reminder.App.Logic.Services;
 using Reminder.App.SystemModule.AppInfo;
+using Reminder.App.SystemModule.Settings;
 
 namespace Reminder.App.UI.ViewModels;
 
 public sealed record GlobalPauseChoice(
     ReminderGlobalPauseDuration Value,
+    string Label);
+
+public sealed record RenderingModeChoice(
+    ReminderRenderingMode Value,
     string Label);
 
 public sealed class MainViewModel : ObservableObject, IDisposable
@@ -26,8 +31,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         new(ReminderGlobalPauseDuration.FiveHours, "5 小时")
     ];
 
+    private static readonly IReadOnlyList<RenderingModeChoice>
+        RenderingModeChoiceValues =
+    [
+        new(
+            ReminderRenderingMode.SoftwareCompatibility,
+            "软件渲染（兼容模式）"),
+        new(
+            ReminderRenderingMode.HardwarePreferred,
+            "硬件优先渲染")
+    ];
+
     private readonly ReminderEngine _engine;
     private readonly Dispatcher _dispatcher;
+    private readonly ReminderApplicationSettingsService _settings;
     private bool _disposed;
     private int _activeEventCount;
     private bool _isGlobalPaused;
@@ -36,11 +53,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private GlobalPauseChoice _selectedGlobalPauseChoice =
         GlobalPauseChoiceValues[0];
     private bool _synchronizingGlobalPause;
+    private RenderingModeChoice _selectedRenderingModeChoice;
+    private HomeReminderViewModel? _selectedHomeEvent;
+    private Guid? _previewedHomeEventId;
 
-    public MainViewModel(ReminderEngine engine, Dispatcher dispatcher)
+    public MainViewModel(
+        ReminderEngine engine,
+        Dispatcher dispatcher,
+        ReminderApplicationSettingsService settings)
     {
         _engine = engine;
         _dispatcher = dispatcher;
+        _settings = settings;
+        _selectedRenderingModeChoice =
+            FindRenderingModeChoice(settings.RenderingMode);
         _engine.StateChanged += OnEngineStateChanged;
 
         AddEventCommand = new RelayCommand(AddEvent);
@@ -49,6 +75,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         RestartAllCommand = new RelayCommand(_engine.RestartAll);
 
         Refresh();
+    }
+
+    public MainViewModel(
+        ReminderEngine engine,
+        Dispatcher dispatcher)
+        : this(
+            engine,
+            dispatcher,
+            new ReminderApplicationSettingsService())
+    {
     }
 
     public string AppName => AppMetadata.Name;
@@ -65,7 +101,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public event Action<EventViewModel>? DeleteRequested;
 
+    public event Action<ReminderRenderingMode>? RenderingModeChangeRequested;
+
+    public event Action<IReadOnlyCollection<Guid>>?
+        HomePresentationChanged;
+
     public ObservableCollection<EventViewModel> Events { get; } = [];
+
+    public ObservableCollection<HomeReminderViewModel> HomeEvents { get; } = [];
 
     public RelayCommand AddEventCommand { get; }
 
@@ -75,6 +118,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public IReadOnlyList<GlobalPauseChoice> GlobalPauseChoices =>
         GlobalPauseChoiceValues;
+
+    public IReadOnlyList<RenderingModeChoice> RenderingModeChoices =>
+        RenderingModeChoiceValues;
 
     public int EventCount => Events.Count;
 
@@ -135,6 +181,55 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         private set => SetProperty(ref _globalPauseRemainingText, value);
     }
 
+    public RenderingModeChoice SelectedRenderingModeChoice
+    {
+        get => _selectedRenderingModeChoice;
+        set
+        {
+            if (value is null ||
+                !SetProperty(ref _selectedRenderingModeChoice, value))
+            {
+                return;
+            }
+
+            if (_settings.SetRenderingMode(value.Value))
+            {
+                RenderingModeChangeRequested?.Invoke(value.Value);
+            }
+        }
+    }
+
+    public HomeReminderViewModel? SelectedHomeEvent
+    {
+        get => _selectedHomeEvent;
+        private set => SetProperty(ref _selectedHomeEvent, value);
+    }
+
+    public HomeReminderViewModel? HomeTopEvent =>
+        HomeEvents.Count switch
+        {
+            2 or >= 3 => HomeEvents[0],
+            _ => null
+        };
+
+    public HomeReminderViewModel? HomeMiddleEvent =>
+        HomeEvents.Count switch
+        {
+            1 => HomeEvents[0],
+            >= 3 => HomeEvents[1],
+            _ => null
+        };
+
+    public HomeReminderViewModel? HomeBottomEvent =>
+        HomeEvents.Count switch
+        {
+            2 => HomeEvents[1],
+            >= 3 => HomeEvents[2],
+            _ => null
+        };
+
+    public bool HasHomeEvents => HomeEvents.Count > 0;
+
     public void Refresh()
     {
         if (_disposed)
@@ -172,6 +267,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
         }
 
+        UpdateHomeEvents(snapshots);
         ActiveEventCount = snapshots.Count(item => item.IsEffectivelyRunning);
         _synchronizingGlobalPause = true;
         try
@@ -234,6 +330,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         Refresh();
     }
 
+    public void PreviewHomeEvent(Guid? eventId)
+    {
+        _previewedHomeEventId = eventId;
+        SelectedHomeEvent =
+            eventId is null
+                ? HomeEvents.FirstOrDefault()
+                : HomeEvents.FirstOrDefault(item => item.Id == eventId) ??
+                  HomeEvents.FirstOrDefault();
+    }
+
     private void OnEngineStateChanged(object? sender, EventArgs e)
     {
         if (_disposed)
@@ -242,6 +348,112 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         _dispatcher.BeginInvoke(Refresh, DispatcherPriority.DataBind);
+    }
+
+    private void UpdateHomeEvents(
+        IReadOnlyList<ReminderEventSnapshot> snapshots)
+    {
+        var oldPresentation = HomeEvents
+            .Select((item, index) => new
+            {
+                item.Id,
+                item.Name,
+                item.StatusText,
+                index
+            })
+            .ToDictionary(item => item.Id);
+        var oldSelectedEventId = SelectedHomeEvent?.Id;
+        var oldCount = HomeEvents.Count;
+        var desired = snapshots
+            .Select((snapshot, index) => new { snapshot, index })
+            .Where(item =>
+                item.snapshot.IsEnabled &&
+                !item.snapshot.IsExpired &&
+                item.snapshot.Remaining is not null &&
+                (item.snapshot.EventType == ReminderEventType.ScheduledTime ||
+                 !item.snapshot.IsPaused))
+            .OrderBy(item => item.snapshot.IsAwaitingAction ? 0 : 1)
+            .ThenBy(item => item.snapshot.Remaining)
+            .ThenBy(item => item.index)
+            .Take(3)
+            .Select(item => item.snapshot)
+            .ToArray();
+
+        for (var targetIndex = 0;
+             targetIndex < desired.Length;
+             targetIndex++)
+        {
+            var snapshot = desired[targetIndex];
+            var currentIndex = IndexOfHomeEvent(snapshot.Id);
+            HomeReminderViewModel viewModel;
+            if (currentIndex < 0)
+            {
+                viewModel = new HomeReminderViewModel(snapshot);
+                HomeEvents.Insert(targetIndex, viewModel);
+            }
+            else
+            {
+                viewModel = HomeEvents[currentIndex];
+                viewModel.ApplySnapshot(snapshot);
+                if (currentIndex != targetIndex)
+                {
+                    HomeEvents.Move(currentIndex, targetIndex);
+                }
+            }
+        }
+
+        var desiredIds = desired.Select(item => item.Id).ToHashSet();
+        for (var index = HomeEvents.Count - 1; index >= 0; index--)
+        {
+            if (!desiredIds.Contains(HomeEvents[index].Id))
+            {
+                HomeEvents.RemoveAt(index);
+            }
+        }
+
+        OnPropertyChanged(nameof(HomeTopEvent));
+        OnPropertyChanged(nameof(HomeMiddleEvent));
+        OnPropertyChanged(nameof(HomeBottomEvent));
+        OnPropertyChanged(nameof(HasHomeEvents));
+        PreviewHomeEvent(_previewedHomeEventId);
+
+        var changedEventIds = HomeEvents
+            .Select((item, index) => new { item, index })
+            .Where(item =>
+                oldCount != HomeEvents.Count ||
+                !oldPresentation.TryGetValue(
+                    item.item.Id,
+                    out var oldItem) ||
+                oldItem.index != item.index ||
+                oldItem.Name != item.item.Name ||
+                oldItem.StatusText != item.item.StatusText)
+            .Select(item => item.item.Id)
+            .ToArray();
+        if (changedEventIds.Length > 0 ||
+            oldCount != HomeEvents.Count ||
+            oldSelectedEventId != SelectedHomeEvent?.Id)
+        {
+            HomePresentationChanged?.Invoke(changedEventIds);
+        }
+    }
+
+    private int IndexOfHomeEvent(Guid id)
+    {
+        for (var index = 0; index < HomeEvents.Count; index++)
+        {
+            if (HomeEvents[index].Id == id)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    private static RenderingModeChoice FindRenderingModeChoice(
+        ReminderRenderingMode mode)
+    {
+        return RenderingModeChoiceValues.First(item => item.Value == mode);
     }
 
     private static string FormatCountdown(TimeSpan remaining)

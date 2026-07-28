@@ -706,6 +706,8 @@ public sealed partial class ReminderEngine : IDisposable
             IsBlockedBySystemState = isBlockedBySystemState,
             IsEffectivelyRunning = isEffectivelyRunning,
             IsAwaitingAction = isAwaitingAction,
+            HasPendingMissedOccurrence =
+                _pendingMissedEventIds.Contains(reminderEvent.Id),
             CanRestart =
                 reminderEvent.Schedule.Type == ReminderEventType.FixedInterval &&
                 reminderEvent.IsEnabled &&

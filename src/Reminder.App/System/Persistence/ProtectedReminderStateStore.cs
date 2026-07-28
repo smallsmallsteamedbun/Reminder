@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Reminder.App.Logic.State;
+using Reminder.App.SystemModule.Settings;
 
 namespace Reminder.App.SystemModule.Persistence;
 
@@ -55,7 +56,7 @@ public sealed class ProtectedReminderStateStore
             }
 
             string primaryError = "正式状态文件不存在。";
-            ReminderEngineState primaryState = null!;
+            ReminderPersistedState primaryState = null!;
             if (primaryExists &&
                 TryLoadFile(
                     _statePath,
@@ -71,7 +72,7 @@ public sealed class ProtectedReminderStateStore
             }
 
             string backupError = "备份状态文件不存在。";
-            ReminderEngineState backupState = null!;
+            ReminderPersistedState backupState = null!;
             if (backupExists &&
                 TryLoadFile(
                     _backupPath,
@@ -102,7 +103,7 @@ public sealed class ProtectedReminderStateStore
         lock (_fileGate)
         {
             var backupError = "备份状态文件不存在。";
-            ReminderEngineState backupState = null!;
+            ReminderPersistedState backupState = null!;
             if (File.Exists(_backupPath) &&
                 TryLoadFile(
                     _backupPath,
@@ -129,7 +130,7 @@ public sealed class ProtectedReminderStateStore
         }
     }
 
-    public ReminderStateSaveResult Save(ReminderEngineState state)
+    public ReminderStateSaveResult Save(ReminderPersistedState state)
     {
         ArgumentNullException.ThrowIfNull(state);
 
@@ -181,9 +182,20 @@ public sealed class ProtectedReminderStateStore
         }
     }
 
+    public ReminderStateSaveResult Save(ReminderEngineState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        return Save(
+            new ReminderPersistedState
+            {
+                EngineState = state,
+                Settings = new ReminderApplicationSettings()
+            });
+    }
+
     private static bool TryDeserialize(
         byte[] protectedBytes,
-        out ReminderEngineState state,
+        out ReminderPersistedState state,
         out string errorMessage)
     {
         state = null!;
@@ -198,7 +210,7 @@ public sealed class ProtectedReminderStateStore
                 JsonSerializer.Deserialize<ReminderStateDocument>(
                     jsonBytes,
                     JsonOptions);
-            return ReminderStateMapper.TryToEngineState(
+            return ReminderStateMapper.TryToPersistedState(
                 document,
                 out state,
                 out errorMessage);
@@ -259,7 +271,7 @@ public sealed class ProtectedReminderStateStore
 
     private static bool TryLoadFile(
         string path,
-        out ReminderEngineState state,
+        out ReminderPersistedState state,
         out string errorMessage)
     {
         state = null!;

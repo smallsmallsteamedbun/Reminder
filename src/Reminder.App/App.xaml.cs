@@ -1,6 +1,8 @@
 using Reminder.App.Logic.Models;
 using Reminder.App.Logic.Services;
 using Reminder.App.SystemModule.Persistence;
+using Reminder.App.SystemModule.Runtime;
+using Reminder.App.SystemModule.Settings;
 using Reminder.App.UI.ViewModels;
 using Reminder.App.UI.Views;
 using Reminder.App.Windows.Activity;
@@ -17,19 +19,24 @@ public partial class App : System.Windows.Application
     private TrayIconService? _trayIconService;
     private IWindowsActivityMonitor? _windowsActivityMonitor;
     private ReminderPersistenceCoordinator? _persistenceCoordinator;
+    private ReminderApplicationSettingsService? _settingsService;
     private bool _finalStateSaved;
     private bool _exitInProgress;
 
     protected override void OnStartup(System.Windows.StartupEventArgs e)
     {
-        if (string.Equals(
-                Environment.GetEnvironmentVariable("REMINDER_SOFTWARE_RENDERING"),
-                "1",
-                StringComparison.Ordinal))
+        if (!ReminderProcessRestarter.WaitForPreviousProcessIfRequested(
+                e.Args))
         {
-            System.Windows.Media.RenderOptions.ProcessRenderMode =
-                System.Windows.Interop.RenderMode.SoftwareOnly;
+            Shutdown(-1);
+            return;
         }
+
+        var stateStore = new ProtectedReminderStateStore();
+        var loadResult = stateStore.Load();
+        _settingsService = new ReminderApplicationSettingsService(
+            loadResult.State?.Settings);
+        ApplyRenderingMode(_settingsService.RenderingMode);
 
         base.OnStartup(e);
 
@@ -63,12 +70,20 @@ public partial class App : System.Windows.Application
             _windowsActivityMonitor = null;
         }
 
-        var stateStore = new ProtectedReminderStateStore();
-        var loadResult = stateStore.Load();
         var stateRestored = TryRestoreState(
             stateStore,
             loadResult,
-            out var recoveryFailed);
+            out var recoveryFailed,
+            out var restoredState);
+        if (restoredState is not null &&
+            _settingsService.RenderingMode !=
+            restoredState.Settings.RenderingMode)
+        {
+            _settingsService.SetRenderingMode(
+                restoredState.Settings.RenderingMode);
+            ApplyRenderingMode(_settingsService.RenderingMode);
+        }
+
         if (!stateRestored)
         {
             _engine.InitializeDefaultEvents();
@@ -78,8 +93,12 @@ public partial class App : System.Windows.Application
             _engine.ActivateRecoveredState();
         }
 
-        _mainViewModel = new MainViewModel(_engine, Dispatcher);
+        _mainViewModel = new MainViewModel(
+            _engine,
+            Dispatcher,
+            _settingsService);
         _mainWindow = new MainWindow(_mainViewModel);
+        _mainWindow.RestartRequested += RequestRestart;
         MainWindow = _mainWindow;
 
         _trayIconService = new TrayIconService(
@@ -89,7 +108,10 @@ public partial class App : System.Windows.Application
             _engine.ResumeAll,
             RequestExit);
         _persistenceCoordinator =
-            new ReminderPersistenceCoordinator(_engine, stateStore);
+            new ReminderPersistenceCoordinator(
+                _engine,
+                stateStore,
+                _settingsService);
         _persistenceCoordinator.Start();
         _mainWindow.Show();
 
@@ -153,8 +175,10 @@ public partial class App : System.Windows.Application
     private bool TryRestoreState(
         ProtectedReminderStateStore stateStore,
         ReminderStateLoadResult loadResult,
-        out bool recoveryFailed)
+        out bool recoveryFailed,
+        out ReminderPersistedState? restoredState)
     {
+        restoredState = null;
         recoveryFailed =
             loadResult.Status == ReminderStateLoadStatus.RecoveryFailed;
         if (!loadResult.HasState || loadResult.State is null)
@@ -163,9 +187,10 @@ public partial class App : System.Windows.Application
         }
 
         if (_engine!.TryImportState(
-                loadResult.State,
+                loadResult.State.EngineState,
                 out _))
         {
+            restoredState = loadResult.State;
             return true;
         }
 
@@ -174,9 +199,10 @@ public partial class App : System.Windows.Application
             var backupResult = stateStore.LoadBackup();
             if (backupResult.State is not null &&
                 _engine.TryImportState(
-                    backupResult.State,
+                    backupResult.State.EngineState,
                     out _))
             {
+                restoredState = backupResult.State;
                 return true;
             }
         }
@@ -212,4 +238,58 @@ public partial class App : System.Windows.Application
         _mainWindow.AllowApplicationExit();
         Shutdown();
     }
+
+    private void RequestRestart()
+    {
+        if (_exitInProgress ||
+            _persistenceCoordinator is null ||
+            _mainWindow is null)
+        {
+            return;
+        }
+
+        _exitInProgress = true;
+        var saveResult = _persistenceCoordinator.SaveFinal();
+        if (!saveResult.IsSuccess)
+        {
+            _exitInProgress = false;
+            System.Windows.MessageBox.Show(
+                _mainWindow,
+                "渲染设置已经更改，但当前状态保存失败，Reminder 没有重启。请检查 Data 目录是否可写后重试。",
+                "无法重启 Reminder",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
+        if (!ReminderProcessRestarter.TryStartReplacementProcess())
+        {
+            _exitInProgress = false;
+            System.Windows.MessageBox.Show(
+                _mainWindow,
+                "无法启动新的 Reminder 进程。渲染设置已经保存，将在下次自行启动软件时生效。",
+                "无法立即重启",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
+        _finalStateSaved = true;
+        _mainWindow.AllowApplicationExit();
+        Shutdown();
+    }
+
+    private static void ApplyRenderingMode(ReminderRenderingMode mode)
+    {
+        var forceSoftware = string.Equals(
+            Environment.GetEnvironmentVariable("REMINDER_SOFTWARE_RENDERING"),
+            "1",
+            StringComparison.Ordinal);
+        System.Windows.Media.RenderOptions.ProcessRenderMode =
+            forceSoftware ||
+            mode == ReminderRenderingMode.SoftwareCompatibility
+                ? System.Windows.Interop.RenderMode.SoftwareOnly
+                : System.Windows.Interop.RenderMode.Default;
+    }
+
 }

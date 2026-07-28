@@ -1,0 +1,102 @@
+<Window
+    x:Class="Reminder.App.UI.Views.RenderingModeRestartDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="更改渲染模式"
+    Width="470"
+    AllowsTransparency="True"
+    AutomationProperties.AutomationId="RenderingModeRestartDialog"
+    Background="Transparent"
+    KeyDown="Window_OnKeyDown"
+    ResizeMode="NoResize"
+    ShowInTaskbar="False"
+    SizeToContent="Height"
+    WindowStartupLocation="CenterOwner"
+    WindowStyle="None">
+
+    <Border
+        Margin="20"
+        Padding="24"
+        Background="{StaticResource SurfaceBrush}"
+        BorderBrush="{StaticResource BorderStrongBrush}"
+        BorderThickness="1"
+        CornerRadius="12">
+        <Border.Effect>
+            <DropShadowEffect
+                BlurRadius="24"
+                Direction="270"
+                Opacity="0.2"
+                ShadowDepth="6"
+                Color="#42000000" />
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="42" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border
+                    Width="34"
+                    Height="34"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Background="{StaticResource PrimarySubtleBrush}"
+                    CornerRadius="17">
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontSize="17"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource PrimaryBrush}"
+                        Text="↻" />
+                </Border>
+                <StackPanel Grid.Column="1">
+                    <TextBlock
+                        FontSize="19"
+                        FontWeight="SemiBold"
+                        Text="更改此设置软件需要重启" />
+                    <TextBlock
+                        Margin="0,9,0,0"
+                        FontSize="13"
+                        Foreground="{StaticResource TextSecondaryBrush}"
+                        Text="设置已经保存。立即重启后将使用新的渲染模式。"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </Grid>
+
+            <Border
+                Grid.Row="1"
+                Height="1"
+                Margin="0,22,0,18"
+                Background="{StaticResource BorderBrush}" />
+
+            <StackPanel
+                Grid.Row="2"
+                HorizontalAlignment="Right"
+                Orientation="Horizontal">
+                <Button
+                    MinWidth="112"
+                    AutomationProperties.AutomationId="RestartLaterButton"
+                    Click="RestartLaterButton_OnClick"
+                    Content="稍后自行重启"
+                    IsCancel="True"
+                    Style="{StaticResource ReminderButtonStyle}" />
+                <Button
+                    MinWidth="112"
+                    Margin="10,0,0,0"
+                    AutomationProperties.AutomationId="RestartNowButton"
+                    Click="RestartNowButton_OnClick"
+                    Content="立即重启软件"
+                    IsDefault="True"
+                    Style="{StaticResource PrimaryButtonStyle}" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
