@@ -529,12 +529,12 @@
                                             BorderThickness="0,1,0,0">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="196" />
-                                                    <ColumnDefinition Width="14" />
-                                                    <ColumnDefinition Width="520" />
-                                                    <ColumnDefinition Width="14" />
+                                                    <ColumnDefinition Width="216" />
+                                                    <ColumnDefinition Width="5" />
+                                                    <ColumnDefinition Width="542" />
+                                                    <ColumnDefinition Width="5" />
                                                     <ColumnDefinition Width="124" />
-                                                    <ColumnDefinition Width="14" />
+                                                    <ColumnDefinition Width="5" />
                                                     <ColumnDefinition Width="182" />
                                                 </Grid.ColumnDefinitions>
 
@@ -583,77 +583,50 @@
                                                             Orientation="Horizontal"
                                                             LostKeyboardFocus="IntervalInputGroup_OnLostKeyboardFocus">
                                                             <StackPanel
-                                                                Margin="0,0,10,0"
+                                                                Margin="0,0,7,0"
                                                                 Orientation="Horizontal"
                                                                 Visibility="{Binding ShowIntervalDays, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                                 <TextBox
-                                                                    Width="64"
+                                                                    Width="72"
                                                                     MaxLength="3"
                                                                     AutomationProperties.Name="提醒间隔天数"
                                                                     KeyDown="IntervalTextBox_OnKeyDown"
-                                                                    Text="{Binding IntervalDaysInput, UpdateSourceTrigger=PropertyChanged}">
-                                                                    <TextBox.Style>
-                                                                        <Style TargetType="TextBox" BasedOn="{StaticResource InputTextBoxStyle}">
-                                                                            <Style.Triggers>
-                                                                                <DataTrigger Binding="{Binding HasIntervalError}" Value="True">
-                                                                                    <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}" />
-                                                                                </DataTrigger>
-                                                                            </Style.Triggers>
-                                                                        </Style>
-                                                                    </TextBox.Style>
-                                                                </TextBox>
+                                                                    Style="{StaticResource IntervalPartInputStyle}"
+                                                                    Text="{Binding IntervalDaysInput, UpdateSourceTrigger=PropertyChanged}" />
                                                                 <TextBlock
-                                                                    Margin="7,0,0,0"
+                                                                    Margin="4,0,0,0"
                                                                     VerticalAlignment="Center"
                                                                     FontSize="13"
                                                                     Foreground="{StaticResource TextSecondaryBrush}"
                                                                     Text="天" />
                                                             </StackPanel>
                                                             <StackPanel
-                                                                Margin="0,0,10,0"
+                                                                Margin="0,0,7,0"
                                                                 Orientation="Horizontal"
                                                                 Visibility="{Binding ShowIntervalHours, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                                 <TextBox
-                                                                    Width="72"
+                                                                    Width="68"
                                                                     MaxLength="4"
                                                                     AutomationProperties.Name="提醒间隔小时"
                                                                     KeyDown="IntervalTextBox_OnKeyDown"
-                                                                    Text="{Binding IntervalHoursInput, UpdateSourceTrigger=PropertyChanged}">
-                                                                    <TextBox.Style>
-                                                                        <Style TargetType="TextBox" BasedOn="{StaticResource InputTextBoxStyle}">
-                                                                            <Style.Triggers>
-                                                                                <DataTrigger Binding="{Binding HasIntervalError}" Value="True">
-                                                                                    <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}" />
-                                                                                </DataTrigger>
-                                                                            </Style.Triggers>
-                                                                        </Style>
-                                                                    </TextBox.Style>
-                                                                </TextBox>
+                                                                    Style="{StaticResource IntervalPartInputStyle}"
+                                                                    Text="{Binding IntervalHoursInput, UpdateSourceTrigger=PropertyChanged}" />
                                                                 <TextBlock
-                                                                    Margin="7,0,0,0"
+                                                                    Margin="4,0,0,0"
                                                                     VerticalAlignment="Center"
                                                                     FontSize="13"
                                                                     Foreground="{StaticResource TextSecondaryBrush}"
                                                                     Text="小时" />
                                                             </StackPanel>
                                                             <TextBox
-                                                                Width="82"
+                                                                Width="78"
                                                                 MaxLength="6"
                                                                 AutomationProperties.Name="提醒间隔分钟"
                                                                 KeyDown="IntervalTextBox_OnKeyDown"
-                                                                Text="{Binding IntervalMinutesInput, UpdateSourceTrigger=PropertyChanged}">
-                                                                <TextBox.Style>
-                                                                    <Style TargetType="TextBox" BasedOn="{StaticResource InputTextBoxStyle}">
-                                                                        <Style.Triggers>
-                                                                            <DataTrigger Binding="{Binding HasIntervalError}" Value="True">
-                                                                                <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}" />
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </TextBox.Style>
-                                                            </TextBox>
+                                                                Style="{StaticResource IntervalPartInputStyle}"
+                                                                Text="{Binding IntervalMinutesInput, UpdateSourceTrigger=PropertyChanged}" />
                                                             <TextBlock
-                                                                Margin="7,0,0,0"
+                                                                Margin="4,0,0,0"
                                                                 VerticalAlignment="Center"
                                                                 FontSize="13"
                                                                 Foreground="{StaticResource TextSecondaryBrush}"
@@ -670,10 +643,10 @@
                                                     <StackPanel Visibility="{Binding IsScheduledTime, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                         <Grid>
                                                             <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="82" />
-                                                                <ColumnDefinition Width="8" />
-                                                                <ColumnDefinition Width="92" />
-                                                                <ColumnDefinition Width="8" />
+                                                                <ColumnDefinition Width="108" />
+                                                                <ColumnDefinition Width="6" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                                <ColumnDefinition Width="6" />
                                                                 <ColumnDefinition Width="*" />
                                                             </Grid.ColumnDefinitions>
 
@@ -684,7 +657,7 @@
                                                                     Foreground="{StaticResource TextMutedBrush}"
                                                                     Text="频率" />
                                                                 <ComboBox
-                                                                    Width="82"
+                                                                    Width="108"
                                                                     AutomationProperties.Name="指定时间频率"
                                                                     DisplayMemberPath="Label"
                                                                     ItemsSource="{Binding RecurrenceChoices}"
@@ -700,7 +673,7 @@
                                                                         Foreground="{StaticResource TextMutedBrush}"
                                                                         Text="星期" />
                                                                     <ComboBox
-                                                                        Width="92"
+                                                                        Width="112"
                                                                         AutomationProperties.Name="每周提醒星期"
                                                                         DisplayMemberPath="Label"
                                                                         ItemsSource="{Binding WeekdayChoices}"
@@ -717,11 +690,11 @@
                                                                     Text="指定日期和时间" />
                                                                 <Grid>
                                                                     <Grid.ColumnDefinitions>
-                                                                        <ColumnDefinition Width="82" />
-                                                                        <ColumnDefinition Width="66" />
-                                                                        <ColumnDefinition Width="66" />
-                                                                        <ColumnDefinition Width="66" />
-                                                                        <ColumnDefinition Width="66" />
+                                                                        <ColumnDefinition Width="Auto" />
+                                                                        <ColumnDefinition Width="Auto" />
+                                                                        <ColumnDefinition Width="Auto" />
+                                                                        <ColumnDefinition Width="Auto" />
+                                                                        <ColumnDefinition Width="Auto" />
                                                                     </Grid.ColumnDefinitions>
 
                                                                     <StackPanel
@@ -729,7 +702,7 @@
                                                                         Orientation="Horizontal"
                                                                         Visibility="{Binding ShowYearField, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                                         <TextBox
-                                                                            Width="64"
+                                                                            Width="76"
                                                                             MaxLength="4"
                                                                             AutomationProperties.Name="提醒年份"
                                                                             KeyDown="EditableTextBox_OnKeyDown"
@@ -748,7 +721,7 @@
                                                                         Orientation="Horizontal"
                                                                         Visibility="{Binding ShowMonthField, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                                         <TextBox
-                                                                            Width="48"
+                                                                            Width="58"
                                                                             MaxLength="2"
                                                                             AutomationProperties.Name="提醒月份"
                                                                             KeyDown="EditableTextBox_OnKeyDown"
@@ -767,7 +740,7 @@
                                                                         Orientation="Horizontal"
                                                                         Visibility="{Binding ShowDayField, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                                         <TextBox
-                                                                            Width="48"
+                                                                            Width="58"
                                                                             MaxLength="2"
                                                                             AutomationProperties.Name="提醒日期"
                                                                             KeyDown="EditableTextBox_OnKeyDown"
@@ -786,7 +759,7 @@
                                                                         Orientation="Horizontal"
                                                                         Visibility="{Binding ShowTimeFields, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                                         <TextBox
-                                                                            Width="48"
+                                                                            Width="58"
                                                                             MaxLength="2"
                                                                             AutomationProperties.Name="提醒小时"
                                                                             KeyDown="EditableTextBox_OnKeyDown"
@@ -805,7 +778,7 @@
                                                                         Orientation="Horizontal"
                                                                         Visibility="{Binding ShowTimeFields, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                                         <TextBox
-                                                                            Width="48"
+                                                                            Width="58"
                                                                             MaxLength="2"
                                                                             AutomationProperties.Name="提醒分钟"
                                                                             KeyDown="EditableTextBox_OnKeyDown"

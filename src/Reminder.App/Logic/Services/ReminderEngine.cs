@@ -150,13 +150,14 @@ public sealed partial class ReminderEngine : IDisposable
                 return true;
             }
 
+            var now = Now;
             reminderEvent.Schedule = new FixedIntervalSchedule(
                 TimeSpan.FromMinutes(intervalMinutes));
-            PrepareActiveScheduleEditLocked(reminderEvent);
+            PrepareActiveScheduleEditLocked(reminderEvent, now);
             notificationToRemove = ApplyScheduleEditLocked(
                 reminderEvent,
-                Now);
-            RescheduleLocked(Now);
+                now);
+            RescheduleLocked(now);
         }
 
         RemoveNotification(notificationToRemove);
@@ -195,7 +196,7 @@ public sealed partial class ReminderEngine : IDisposable
                 reminderEvent.Termination.SetRemaining(null);
             }
 
-            PrepareActiveScheduleEditLocked(reminderEvent);
+            PrepareActiveScheduleEditLocked(reminderEvent, now);
             notificationToRemove = ApplyScheduleEditLocked(reminderEvent, now);
             RescheduleLocked(now);
         }
@@ -231,7 +232,7 @@ public sealed partial class ReminderEngine : IDisposable
                 reminderEvent.Termination.SetRemaining(null);
             }
 
-            PrepareActiveScheduleEditLocked(reminderEvent);
+            PrepareActiveScheduleEditLocked(reminderEvent, now);
             notificationToRemove = ApplyScheduleEditLocked(reminderEvent, now);
             RescheduleLocked(now);
         }
@@ -420,7 +421,8 @@ public sealed partial class ReminderEngine : IDisposable
             }
 
             var now = Now;
-            if (reminderEvent.IsPaused)
+            if (reminderEvent.IsPaused ||
+                reminderEvent.IsBlockedByGlobalPause)
             {
                 ResumeLocked(reminderEvent, now);
                 if (IsPastOneTimeEvent(reminderEvent, now))
@@ -503,6 +505,11 @@ public sealed partial class ReminderEngine : IDisposable
             {
                 notificationToRemove = PauseLocked(reminderEvent, now);
                 reminderEvent.IsEnabled = false;
+                reminderEvent.IsBlockedByGlobalPause = false;
+                RemoveFixedClockBlockLocked(
+                    reminderEvent,
+                    FixedClockBlockReason.GlobalPause,
+                    now);
             }
 
             RescheduleLocked(now);
@@ -533,7 +540,9 @@ public sealed partial class ReminderEngine : IDisposable
             notificationToRemove = reminderEvent.ActiveNotificationId;
             _pendingMissedEventIds.Remove(eventId);
             _events.Remove(reminderEvent);
-            RescheduleLocked(Now);
+            var now = Now;
+            ReconcileGlobalPauseAfterParticipantChangeLocked(now);
+            RescheduleLocked(now);
         }
 
         RemoveNotification(notificationToRemove);
@@ -560,7 +569,7 @@ public sealed partial class ReminderEngine : IDisposable
 
                 ClearNotificationStateLocked(reminderEvent);
                 reminderEvent.SystemBlockInterruptedActiveNotification = false;
-                reminderEvent.IsPaused = false;
+                ResumeLocked(reminderEvent, now);
                 reminderEvent.FrozenRemaining = fixedInterval.Interval;
                 reminderEvent.DueAt =
                     reminderEvent.FixedClockBlockReasons ==
@@ -604,12 +613,13 @@ public sealed partial class ReminderEngine : IDisposable
             Termination = new ReminderTermination(),
             IsEnabled = isEnabled,
             IsPaused = !isEnabled,
+            IsBlockedByGlobalPause = isEnabled && _isGlobalPaused,
             DueAt = isEnabled ? now + interval : null,
             FrozenRemaining = interval
         };
 
         _events.Add(reminderEvent);
-        if (isEnabled && _isGlobalPaused)
+        if (reminderEvent.IsBlockedByGlobalPause)
         {
             AddFixedClockBlockLocked(
                 reminderEvent,
@@ -672,7 +682,8 @@ public sealed partial class ReminderEngine : IDisposable
             reminderEvent.ActiveNotificationId is not null &&
             !reminderEvent.IsNotificationDeferred;
         var isBlockedByGlobalPause =
-            reminderEvent.IsEnabled && _isGlobalPaused;
+            reminderEvent.IsEnabled &&
+            reminderEvent.IsBlockedByGlobalPause;
         var isBlockedBySystemState =
             reminderEvent.IsEnabled &&
             IsBlockedBySystemStateLocked(reminderEvent);
@@ -714,7 +725,7 @@ public sealed partial class ReminderEngine : IDisposable
                 !reminderEvent.IsPaused &&
                 reminderEvent.FixedClockBlockReasons ==
                     FixedClockBlockReason.None &&
-                !_isGlobalPaused &&
+                !reminderEvent.IsBlockedByGlobalPause &&
                 !_systemState.IsSleeping &&
                 reminderEvent.ActiveNotificationId is null,
             IsExpired = reminderEvent.IsExpired,
@@ -962,8 +973,8 @@ public sealed partial class ReminderEngine : IDisposable
             }
 
             reminderEvent.Schedule = new ScheduledTimeSchedule(settings);
-            PrepareActiveScheduleEditLocked(reminderEvent);
             var now = Now;
+            PrepareActiveScheduleEditLocked(reminderEvent, now);
             notificationToRemove = ApplyScheduleEditLocked(reminderEvent, now);
             if (settings.Recurrence == ReminderRecurrence.Once &&
                 settings.OneTimeAt < now &&
@@ -1034,7 +1045,8 @@ public sealed partial class ReminderEngine : IDisposable
                     ? now + fixedInterval.Interval
                     : null;
 
-            if (reminderEvent.IsEnabled && _isGlobalPaused)
+            if (reminderEvent.IsEnabled &&
+                reminderEvent.IsBlockedByGlobalPause)
             {
                 AddFixedClockBlockLocked(
                     reminderEvent,
@@ -1150,13 +1162,11 @@ public sealed partial class ReminderEngine : IDisposable
         return notificationId;
     }
 
-    private static void ResumeLocked(
+    private void ResumeLocked(
         ReminderEvent reminderEvent,
         DateTimeOffset now)
     {
-        reminderEvent.IsPaused = false;
-        reminderEvent.IsExpired = false;
-        reminderEvent.ShowExpiredEasterEgg = false;
+        var wasPaused = ClearPauseStateLocked(reminderEvent, now);
 
         if (reminderEvent.Schedule is FixedIntervalSchedule)
         {
@@ -1164,14 +1174,25 @@ public sealed partial class ReminderEngine : IDisposable
                 FixedClockBlockReason.None)
             {
                 reminderEvent.DueAt = null;
+                if (wasPaused)
+                {
+                    ReconcileGlobalPauseAfterParticipantChangeLocked(now);
+                }
+
                 return;
             }
 
             ResumeFixedClockLocked(reminderEvent, now);
-            return;
+        }
+        else
+        {
+            ScheduleNextOccurrenceLocked(reminderEvent, now, inclusive: true);
         }
 
-        ScheduleNextOccurrenceLocked(reminderEvent, now, inclusive: true);
+        if (wasPaused)
+        {
+            ReconcileGlobalPauseAfterParticipantChangeLocked(now);
+        }
     }
 
     private static void ScheduleNextOccurrenceLocked(
@@ -1204,6 +1225,7 @@ public sealed partial class ReminderEngine : IDisposable
     {
         reminderEvent.IsEnabled = false;
         reminderEvent.IsPaused = true;
+        reminderEvent.IsBlockedByGlobalPause = false;
         reminderEvent.FixedClockBlockReasons =
             FixedClockBlockReason.None;
         reminderEvent.SystemBlockInterruptedActiveNotification = false;
@@ -1224,11 +1246,37 @@ public sealed partial class ReminderEngine : IDisposable
         reminderEvent.ActiveOccurrenceAt = null;
     }
 
-    private static void PrepareActiveScheduleEditLocked(
-        ReminderEvent reminderEvent)
+    private void PrepareActiveScheduleEditLocked(
+        ReminderEvent reminderEvent,
+        DateTimeOffset now)
     {
         reminderEvent.IsEnabled = true;
+        if (ClearPauseStateLocked(reminderEvent, now))
+        {
+            ReconcileGlobalPauseAfterParticipantChangeLocked(now);
+        }
+    }
+
+    private static bool ClearPauseStateLocked(
+        ReminderEvent reminderEvent,
+        DateTimeOffset now)
+    {
+        var wasPaused =
+            reminderEvent.IsPaused ||
+            reminderEvent.IsBlockedByGlobalPause;
         reminderEvent.IsPaused = false;
+        reminderEvent.IsExpired = false;
+        reminderEvent.ShowExpiredEasterEgg = false;
+        if (reminderEvent.IsBlockedByGlobalPause)
+        {
+            reminderEvent.IsBlockedByGlobalPause = false;
+            RemoveFixedClockBlockLocked(
+                reminderEvent,
+                FixedClockBlockReason.GlobalPause,
+                now);
+        }
+
+        return wasPaused;
     }
 
     private void ActivateAfterEditLocked(
@@ -1236,7 +1284,8 @@ public sealed partial class ReminderEngine : IDisposable
         DateTimeOffset now)
     {
         reminderEvent.IsEnabled = true;
-        if (reminderEvent.IsPaused)
+        if (reminderEvent.IsPaused ||
+            reminderEvent.IsBlockedByGlobalPause)
         {
             ResumeLocked(reminderEvent, now);
         }
@@ -1244,16 +1293,6 @@ public sealed partial class ReminderEngine : IDisposable
         if (reminderEvent.Schedule is not FixedIntervalSchedule)
         {
             return;
-        }
-
-        if (_isGlobalPaused)
-        {
-            AddFixedClockBlockLocked(
-                reminderEvent,
-                FixedClockBlockReason.GlobalPause,
-                now,
-                resetToFullInterval: false,
-                notificationsToRemove: null);
         }
 
         if (_systemState.IsScreenOrLockUnavailable)

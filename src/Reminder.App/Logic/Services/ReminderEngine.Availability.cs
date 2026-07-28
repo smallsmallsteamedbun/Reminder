@@ -53,6 +53,7 @@ public sealed partial class ReminderEngine
                 foreach (var reminderEvent in _events.Where(
                              item => item.IsEnabled))
                 {
+                    reminderEvent.IsBlockedByGlobalPause = true;
                     if (reminderEvent.Schedule is FixedIntervalSchedule)
                     {
                         AddFixedClockBlockLocked(
@@ -113,33 +114,18 @@ public sealed partial class ReminderEngine
                     now,
                     strictlyBefore: true,
                     forceSuppressAll: false);
-            }
-
-            var individuallyPausedEvents = _events.Where(
-                    item => item.IsEnabled &&
-                            item.IsPaused &&
-                            item.Schedule is FixedIntervalSchedule)
-                .ToArray();
-            foreach (var reminderEvent in individuallyPausedEvents)
-            {
-                reminderEvent.IsPaused = false;
-                reminderEvent.IsExpired = false;
-                reminderEvent.ShowExpiredEasterEgg = false;
-            }
-
-            if (_isGlobalPaused)
-            {
                 EndGlobalPauseLocked(now);
             }
             else
             {
-                foreach (var reminderEvent in individuallyPausedEvents.Where(
-                             item =>
-                                     item.FixedClockBlockReasons ==
-                                         FixedClockBlockReason.None &&
-                                     item.DueAt is null))
+                foreach (var reminderEvent in _events.Where(
+                             item => item.IsEnabled &&
+                                     item.IsPaused &&
+                                     item.Schedule is
+                                         FixedIntervalSchedule)
+                         .ToArray())
                 {
-                    ResumeFixedClockLocked(reminderEvent, now);
+                    ResumeLocked(reminderEvent, now);
                 }
             }
 
@@ -412,9 +398,9 @@ public sealed partial class ReminderEngine
     {
         _isGlobalPaused = false;
         _globalPauseEndsAt = null;
-        foreach (var reminderEvent in _events.Where(
-                     item => item.Schedule is FixedIntervalSchedule))
+        foreach (var reminderEvent in _events)
         {
+            reminderEvent.IsBlockedByGlobalPause = false;
             if (reminderEvent.IsEnabled)
             {
                 reminderEvent.IsPaused = false;
@@ -422,10 +408,30 @@ public sealed partial class ReminderEngine
                 reminderEvent.ShowExpiredEasterEgg = false;
             }
 
-            RemoveFixedClockBlockLocked(
-                reminderEvent,
-                FixedClockBlockReason.GlobalPause,
-                now);
+            if (reminderEvent.Schedule is FixedIntervalSchedule)
+            {
+                RemoveFixedClockBlockLocked(
+                    reminderEvent,
+                    FixedClockBlockReason.GlobalPause,
+                    now);
+            }
+        }
+    }
+
+    private void ReconcileGlobalPauseAfterParticipantChangeLocked(
+        DateTimeOffset now)
+    {
+        if (!_isGlobalPaused)
+        {
+            return;
+        }
+
+        var hasPausedEvent = _events.Any(item =>
+            item.IsEnabled &&
+            (item.IsPaused || item.IsBlockedByGlobalPause));
+        if (!hasPausedEvent)
+        {
+            EndGlobalPauseLocked(now);
         }
     }
 
@@ -672,7 +678,7 @@ public sealed partial class ReminderEngine
     {
         if (!reminderEvent.IsEnabled ||
             reminderEvent.IsPaused ||
-            _isGlobalPaused ||
+            reminderEvent.IsBlockedByGlobalPause ||
             _systemState.IsSleeping)
         {
             return false;

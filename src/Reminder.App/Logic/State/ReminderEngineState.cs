@@ -31,6 +31,8 @@ public sealed record ReminderEngineEventState
 
     public required bool IsPaused { get; init; }
 
+    public required bool IsBlockedByGlobalPause { get; init; }
+
     public required FixedUnavailablePolicy FixedUnavailablePolicy { get; init; }
 
     public required UnavailableNotificationPolicy

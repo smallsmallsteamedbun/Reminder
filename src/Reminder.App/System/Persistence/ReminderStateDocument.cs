@@ -5,7 +5,7 @@ namespace Reminder.App.SystemModule.Persistence;
 
 internal sealed record ReminderStateDocument
 {
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 3;
 
     public required int Version { get; init; }
 
@@ -38,6 +38,8 @@ internal sealed record ReminderEventDocument
     public required bool IsEnabled { get; init; }
 
     public required bool IsPaused { get; init; }
+
+    public bool IsBlockedByGlobalPause { get; init; }
 
     public required FixedUnavailablePolicy FixedUnavailablePolicy { get; init; }
 

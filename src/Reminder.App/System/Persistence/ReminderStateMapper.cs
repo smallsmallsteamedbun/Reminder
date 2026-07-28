@@ -71,7 +71,12 @@ internal static class ReminderStateMapper
                 EngineState = new ReminderEngineState
                 {
                     SavedAt = document.SavedAt,
-                    Events = document.Events.Select(ToEngineState).ToArray(),
+                    Events = document.Events
+                        .Select(item => ToEngineState(
+                            item,
+                            document.Version,
+                            document.GlobalPause.IsPaused))
+                        .ToArray(),
                     GlobalPause = new ReminderEngineGlobalPauseState
                     {
                         IsPaused = document.GlobalPause.IsPaused,
@@ -128,6 +133,7 @@ internal static class ReminderStateMapper
             RemainingOccurrences = state.RemainingOccurrences,
             IsEnabled = state.IsEnabled,
             IsPaused = state.IsPaused,
+            IsBlockedByGlobalPause = state.IsBlockedByGlobalPause,
             FixedUnavailablePolicy = state.FixedUnavailablePolicy,
             FixedUnavailableNotificationPolicy =
                 state.FixedUnavailableNotificationPolicy,
@@ -142,7 +148,9 @@ internal static class ReminderStateMapper
     }
 
     private static ReminderEngineEventState ToEngineState(
-        ReminderEventDocument document)
+        ReminderEventDocument document,
+        int documentVersion,
+        bool isGlobalPaused)
     {
         if (document.ScheduledTime is null)
         {
@@ -173,6 +181,10 @@ internal static class ReminderStateMapper
             RemainingOccurrences = document.RemainingOccurrences,
             IsEnabled = document.IsEnabled,
             IsPaused = document.IsPaused,
+            IsBlockedByGlobalPause =
+                documentVersion < 3
+                    ? isGlobalPaused && document.IsEnabled
+                    : document.IsBlockedByGlobalPause,
             FixedUnavailablePolicy =
                 document.FixedUnavailablePolicy,
             FixedUnavailableNotificationPolicy =

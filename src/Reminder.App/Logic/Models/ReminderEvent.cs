@@ -14,6 +14,8 @@ internal sealed class ReminderEvent
 
     public bool IsPaused { get; set; }
 
+    public bool IsBlockedByGlobalPause { get; set; }
+
     public FixedUnavailablePolicy FixedUnavailablePolicy { get; set; } =
         FixedUnavailablePolicy.PauseTiming;
 

@@ -87,6 +87,7 @@ public sealed class EventViewModel : ObservableObject
     private string _scheduleSummary = string.Empty;
     private bool _isEnabled;
     private bool _isPaused;
+    private bool _isBlockedByGlobalPause;
     private bool _isAwaitingAction;
     private bool _canRestart;
     private bool _isHighlighted;
@@ -354,7 +355,8 @@ public sealed class EventViewModel : ObservableObject
         private set => SetProperty(ref _scheduleSummary, value);
     }
 
-    public string PauseButtonText => IsPaused ? "恢复" : "暂停";
+    public string PauseButtonText =>
+        IsPaused || IsBlockedByGlobalPause ? "恢复" : "暂停";
 
     public bool IsEnabled
     {
@@ -384,6 +386,19 @@ public sealed class EventViewModel : ObservableObject
         private set
         {
             if (SetProperty(ref _isPaused, value))
+            {
+                OnPropertyChanged(nameof(PauseButtonText));
+                OnPropertyChanged(nameof(CardOpacity));
+            }
+        }
+    }
+
+    public bool IsBlockedByGlobalPause
+    {
+        get => _isBlockedByGlobalPause;
+        private set
+        {
+            if (SetProperty(ref _isBlockedByGlobalPause, value))
             {
                 OnPropertyChanged(nameof(PauseButtonText));
                 OnPropertyChanged(nameof(CardOpacity));
@@ -856,6 +871,7 @@ public sealed class EventViewModel : ObservableObject
         {
             IsEnabled = snapshot.IsEnabled;
             IsPaused = snapshot.IsPaused;
+            IsBlockedByGlobalPause = snapshot.IsBlockedByGlobalPause;
             IsEffectivelyRunning = snapshot.IsEffectivelyRunning;
             IsAwaitingAction = snapshot.IsAwaitingAction;
             CanRestart = snapshot.CanRestart;

@@ -81,7 +81,7 @@ public sealed partial class ReminderEngine
                          item => item.IsEnabled &&
                                  item.Schedule is FixedIntervalSchedule))
             {
-                if (_isGlobalPaused)
+                if (reminderEvent.IsBlockedByGlobalPause)
                 {
                     reminderEvent.FixedClockBlockReasons |=
                         FixedClockBlockReason.GlobalPause;
@@ -203,6 +203,8 @@ public sealed partial class ReminderEngine
                 reminderEvent.Termination.RemainingOccurrences,
             IsEnabled = reminderEvent.IsEnabled,
             IsPaused = reminderEvent.IsPaused,
+            IsBlockedByGlobalPause =
+                reminderEvent.IsBlockedByGlobalPause,
             FixedUnavailablePolicy =
                 reminderEvent.FixedUnavailablePolicy,
             FixedUnavailableNotificationPolicy =
@@ -277,6 +279,14 @@ public sealed partial class ReminderEngine
         }
 
         globalPauseDuration = state.GlobalPause.Duration;
+        if (state.Events.Any(item =>
+                item.IsBlockedByGlobalPause &&
+                (!state.GlobalPause.IsPaused || !item.IsEnabled)))
+        {
+            errorMessage = "事件的全部暂停状态与全局状态不一致。";
+            return false;
+        }
+
         var eventIds = new HashSet<Guid>();
         foreach (var eventState in state.Events)
         {
@@ -431,6 +441,8 @@ public sealed partial class ReminderEngine
             Termination = termination,
             IsEnabled = state.IsEnabled,
             IsPaused = state.IsPaused,
+            IsBlockedByGlobalPause =
+                state.IsBlockedByGlobalPause,
             FixedUnavailablePolicy = state.FixedUnavailablePolicy,
             FixedUnavailableNotificationPolicy =
                 state.FixedUnavailableNotificationPolicy,
