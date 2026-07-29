@@ -108,32 +108,34 @@ public sealed partial class ReminderEngine
         {
             ThrowIfDisposed();
             var now = Now;
-            if (_isGlobalPaused)
-            {
-                ProcessSuppressedDueEventsLocked(
-                    now,
-                    strictlyBefore: true,
-                    forceSuppressAll: false);
-                EndGlobalPauseLocked(now);
-            }
-            else
-            {
-                foreach (var reminderEvent in _events.Where(
-                             item => item.IsEnabled &&
-                                     item.IsPaused &&
-                                     item.Schedule is
-                                         FixedIntervalSchedule)
-                         .ToArray())
-                {
-                    ResumeLocked(reminderEvent, now);
-                }
-            }
-
+            ResumeAllLocked(now);
             RescheduleLocked(now);
         }
 
         RaiseStateChanged();
         RaiseDurableStateChanged();
+    }
+
+    private void ResumeAllLocked(DateTimeOffset now)
+    {
+        if (_isGlobalPaused)
+        {
+            ProcessSuppressedDueEventsLocked(
+                now,
+                strictlyBefore: true,
+                forceSuppressAll: false);
+            EndGlobalPauseLocked(now);
+            return;
+        }
+
+        foreach (var reminderEvent in _events.Where(
+                     item => item.IsEnabled &&
+                             item.IsPaused &&
+                             item.Schedule is FixedIntervalSchedule)
+                 .ToArray())
+        {
+            ResumeLocked(reminderEvent, now);
+        }
     }
 
     public bool UpdateFixedUnavailablePolicy(

@@ -23,11 +23,14 @@ namespace Reminder.App.UI.Views;
 
 public partial class MainWindow : Window
 {
+    private const int WmActivateApp = 0x001C;
     private const int WmMouseHorizontalWheel = 0x020E;
     private readonly MainViewModel _viewModel;
     private readonly DispatcherTimer _countdownRefreshTimer;
     private readonly DispatcherTimer _newEventHighlightTimer;
     private readonly SmoothScrollController _eventListScroller;
+    private readonly SmoothScrollController _settingsScroller;
+    private readonly SectionHighlightAnimator _settingsSectionHighlighter;
     private readonly ListReflowAnimator _eventListReflowAnimator;
     private readonly PageNavigationController _pageNavigator;
     private readonly ContentControl[] _homeCardSlots;
@@ -78,6 +81,10 @@ public partial class MainWindow : Window
             handledEventsToo: true);
 
         _eventListScroller = new SmoothScrollController(EventListScrollViewer);
+        _settingsScroller = new SmoothScrollController(SettingsScrollViewer);
+        _settingsSectionHighlighter = new SectionHighlightAnimator(
+            (Brush)FindResource("SurfaceBrush"),
+            (Brush)FindResource("PrimarySubtleBrush"));
         _eventListReflowAnimator = new ListReflowAnimator(
             EventItemsControl,
             EventListScrollViewer);
@@ -125,6 +132,8 @@ public partial class MainWindow : Window
                         .Where(item =>
                             item.DataContext is HomeReminderViewModel));
                 _eventListScroller.CompleteImmediately();
+                _settingsScroller.CompleteImmediately();
+                _settingsSectionHighlighter.CompleteImmediately();
                 _eventListReflowAnimator.CompleteImmediately();
                 Dispatcher.BeginInvoke(
                     ProcessMemoryTrimmer.TrimAfterWindowHidden,
@@ -177,12 +186,21 @@ public partial class MainWindow : Window
         _windowSource?.AddHook(WindowMessageHook);
     }
 
+    protected override void OnDeactivated(EventArgs e)
+    {
+        CloseTransientPopups();
+        base.OnDeactivated(e);
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         _viewModel.RenderingModeChangeRequested -=
             OnRenderingModeChangeRequested;
         _viewModel.HomePresentationChanged -=
             OnHomePresentationChanged;
+        _eventListScroller.Dispose();
+        _settingsScroller.Dispose();
+        _settingsSectionHighlighter.Dispose();
         _windowSource?.RemoveHook(WindowMessageHook);
         _windowSource = null;
         base.OnClosed(e);
@@ -249,6 +267,158 @@ public partial class MainWindow : Window
         CommitInterval(group);
     }
 
+    private void SnoozeDurationTextBox_OnKeyDown(
+        object sender,
+        System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter)
+        {
+            return;
+        }
+
+        _viewModel.CommitSnoozeDuration();
+        Keyboard.ClearFocus();
+        e.Handled = true;
+    }
+
+    private void SnoozeDurationInputGroup_OnLostKeyboardFocus(
+        object sender,
+        KeyboardFocusChangedEventArgs e)
+    {
+        if (sender is not FrameworkElement group)
+        {
+            return;
+        }
+
+        if (e.NewFocus is DependencyObject newFocus &&
+            IsVisualDescendant(group, newFocus))
+        {
+            return;
+        }
+
+        _viewModel.CommitSnoozeDuration();
+    }
+
+    private void EventSearchTextBox_OnGotKeyboardFocus(
+        object sender,
+        KeyboardFocusChangedEventArgs e)
+    {
+        EventSearchHistoryPopup.IsOpen =
+            _viewModel.HasSearchHistory;
+    }
+
+    private void EventSearchTextBox_OnKeyDown(
+        object sender,
+        System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter)
+        {
+            return;
+        }
+
+        _viewModel.CommitSearch();
+        EventSearchHistoryPopup.IsOpen = false;
+        Keyboard.ClearFocus();
+        e.Handled = true;
+    }
+
+    private void ClearEventSearchButton_OnClick(
+        object sender,
+        RoutedEventArgs e)
+    {
+        _viewModel.ClearSearch();
+        EventSearchHistoryPopup.IsOpen = false;
+        EventSearchTextBox.Focus();
+    }
+
+    private void SearchHistoryItem_OnClick(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string query })
+        {
+            _viewModel.SelectSearchHistory(query);
+        }
+
+        EventSearchHistoryPopup.IsOpen = false;
+    }
+
+    private void DeleteSearchHistoryButton_OnClick(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string query })
+        {
+            _viewModel.RemoveSearchHistory(query);
+        }
+
+        EventSearchHistoryPopup.IsOpen =
+            _viewModel.HasSearchHistory;
+        e.Handled = true;
+    }
+
+    private void ClearSearchHistoryButton_OnClick(
+        object sender,
+        RoutedEventArgs e)
+    {
+        _viewModel.ClearSearchHistory();
+        EventSearchHistoryPopup.IsOpen = false;
+    }
+
+    private void RestoreDefaultSettingsButton_OnClick(
+        object sender,
+        RoutedEventArgs e)
+    {
+        var dialog = new RestoreDefaultSettingsDialog
+        {
+            Owner = this
+        };
+        if (dialog.ShowDialog() == true)
+        {
+            _viewModel.RestoreDefaultSettings();
+        }
+    }
+
+    private void RenderingSettingsIndexButton_OnClick(
+        object sender,
+        RoutedEventArgs e)
+    {
+        ScrollToSettingsSection(RenderingSettingsSection);
+    }
+
+    private void NotificationSettingsIndexButton_OnClick(
+        object sender,
+        RoutedEventArgs e)
+    {
+        ScrollToSettingsSection(NotificationSettingsSection);
+    }
+
+    private void RestoreDefaultsSettingsIndexButton_OnClick(
+        object sender,
+        RoutedEventArgs e)
+    {
+        ScrollToSettingsSection(RestoreDefaultsSettingsSection);
+    }
+
+    private void ScrollToSettingsSection(FrameworkElement section)
+    {
+        _settingsScroller.CompleteImmediately();
+        _settingsSectionHighlighter.CompleteImmediately();
+        SettingsScrollViewer.UpdateLayout();
+        var sectionTop = section.TranslatePoint(
+            new System.Windows.Point(0, 0),
+            SettingsScrollViewer).Y;
+        _settingsScroller.ScrollBy(
+            sectionTop - 12,
+            () =>
+            {
+                if (section is Border border)
+                {
+                    _settingsSectionHighlighter.Flash(border);
+                }
+            });
+    }
+
     private void EditableTextBox_OnGotKeyboardFocus(
         object sender,
         KeyboardFocusChangedEventArgs e)
@@ -263,9 +433,24 @@ public partial class MainWindow : Window
         object sender,
         MouseButtonEventArgs e)
     {
+        var source = e.OriginalSource as DependencyObject;
+        if (e.ChangedButton == MouseButton.Left)
+        {
+            if (source is not null &&
+                IsDescendantOf(source, EventSearchTextBox))
+            {
+                EventSearchHistoryPopup.IsOpen =
+                    _viewModel.HasSearchHistory;
+            }
+            else
+            {
+                CommitSearchOnExternalMouseClick(source);
+            }
+        }
+
         if (e.ChangedButton != MouseButton.Left ||
             FindAncestor<TextBox>(
-                e.OriginalSource as DependencyObject) is not { } textBox ||
+                source) is not { } textBox ||
             textBox.IsKeyboardFocusWithin)
         {
             return;
@@ -274,6 +459,21 @@ public partial class MainWindow : Window
         textBox.Focus();
         MoveCaretToEnd(textBox);
         e.Handled = true;
+    }
+
+    private void CommitSearchOnExternalMouseClick(
+        DependencyObject? source)
+    {
+        if ((!EventSearchTextBox.IsKeyboardFocusWithin &&
+             !EventSearchHistoryPopup.IsOpen) ||
+            source is null ||
+            IsDescendantOf(source, EventSearchTextBox))
+        {
+            return;
+        }
+
+        _viewModel.CommitSearch();
+        EventSearchHistoryPopup.IsOpen = false;
     }
 
     private void EventNameTextBox_OnPreviewTextInput(
@@ -493,6 +693,13 @@ public partial class MainWindow : Window
         IntPtr lParam,
         ref bool handled)
     {
+        if (message == WmActivateApp &&
+            wParam == IntPtr.Zero)
+        {
+            CloseTransientPopups();
+            return IntPtr.Zero;
+        }
+
         if (message != WmMouseHorizontalWheel || !IsVisible)
         {
             return IntPtr.Zero;
@@ -512,6 +719,17 @@ public partial class MainWindow : Window
 
         handled = true;
         return IntPtr.Zero;
+    }
+
+    private void CloseTransientPopups()
+    {
+        EventSearchHistoryPopup.IsOpen = false;
+        foreach (var comboBox in
+                 FindVisualDescendants<ComboBox>(this)
+                     .Where(item => item.IsDropDownOpen))
+        {
+            comboBox.IsDropDownOpen = false;
+        }
     }
 
     private static bool TryScrollHorizontal(
@@ -606,6 +824,7 @@ public partial class MainWindow : Window
 
     private void OnEventAdded(Guid eventId)
     {
+        EventSearchHistoryPopup.IsOpen = false;
         Dispatcher.BeginInvoke(
             () => RevealAndHighlightEvent(eventId),
             DispatcherPriority.Loaded);
@@ -720,6 +939,18 @@ public partial class MainWindow : Window
         ReminderPage page,
         Guid? revealEventId = null)
     {
+        EventSearchHistoryPopup.IsOpen = false;
+        if (page != ReminderPage.Settings)
+        {
+            _settingsScroller.CompleteImmediately();
+            _settingsSectionHighlighter.CompleteImmediately();
+        }
+
+        if (page == ReminderPage.Events && revealEventId is not null)
+        {
+            _viewModel.ClearSearch();
+        }
+
         Action? completed = null;
         if (page == ReminderPage.Events &&
             revealEventId is not null)

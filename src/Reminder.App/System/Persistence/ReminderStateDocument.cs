@@ -1,11 +1,12 @@
 using Reminder.App.Logic.Models;
+using Reminder.App.Logic.Services;
 using Reminder.App.SystemModule.Settings;
 
 namespace Reminder.App.SystemModule.Persistence;
 
 internal sealed record ReminderStateDocument
 {
-    public const int CurrentVersion = 3;
+    public const int CurrentVersion = 4;
 
     public required int Version { get; init; }
 
@@ -19,6 +20,16 @@ internal sealed record ReminderStateDocument
 
     public ReminderRenderingMode RenderingMode { get; init; } =
         ReminderRenderingMode.HardwarePreferred;
+
+    public int SnoozeDurationMinutes { get; init; } = 5;
+
+    public ReminderSnoozeOverflowPolicy SnoozeOverflowPolicy { get; init; } =
+        ReminderSnoozeOverflowPolicy.ShortenToFixedInterval;
+
+    public ReminderNotificationDisplayDuration NotificationDisplayDuration
+        { get; init; } = ReminderNotificationDisplayDuration.Short;
+
+    public List<string> SearchHistory { get; init; } = [];
 }
 
 internal sealed record ReminderEventDocument

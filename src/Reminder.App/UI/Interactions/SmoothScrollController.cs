@@ -25,13 +25,15 @@ public sealed class SmoothScrollController : IDisposable
         _targetOffset = scrollViewer.VerticalOffset;
     }
 
-    public void ScrollBy(double pixels)
+    public void ScrollBy(
+        double pixels,
+        Action? completed = null)
     {
         ThrowIfDisposed();
         var origin = _isAnimating
             ? _targetOffset
             : _scrollViewer.VerticalOffset;
-        AnimateTo(origin + pixels);
+        AnimateTo(origin + pixels, completed);
     }
 
     public void ScrollToReveal(

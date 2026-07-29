@@ -27,6 +27,119 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        <Style x:Key="SearchClearButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="30" />
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+            <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+            <Setter Property="FontSize" Value="19" />
+            <Setter Property="FontWeight" Value="Normal" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="Transparent">
+                            <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="SearchHistoryRowButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Normal" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            Padding="{TemplateBinding Padding}"
+                            Background="Transparent">
+                            <ContentPresenter
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="Center"
+                                TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Opacity" Value="0.72" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style
+            x:Key="SearchHistoryClearButtonStyle"
+            TargetType="Button"
+            BasedOn="{StaticResource SearchHistoryRowButtonStyle}">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+        </Style>
+        <Style x:Key="SettingsIndexButtonStyle" TargetType="Button">
+            <Setter Property="MinHeight" Value="38" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            x:Name="IndexBackground"
+                            Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="7">
+                            <ContentPresenter
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="Center"
+                                TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="IndexBackground" Property="Background" Value="{StaticResource SurfaceSubtleBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="IndexBackground" Property="Background" Value="{StaticResource PrimarySubtleBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <DataTemplate x:Key="HomeEventCardTemplate">
             <Button
                 Width="300"
@@ -180,15 +293,118 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <StackPanel
+                <Grid
                     x:Name="EventSummaryPanel"
                     Grid.Column="0"
                     VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="18" />
+                        <ColumnDefinition Width="210" />
+                    </Grid.ColumnDefinitions>
                     <TextBlock
+                        VerticalAlignment="Center"
                         FontSize="13"
                         Foreground="{StaticResource TextSecondaryBrush}"
                         Text="{Binding EventSummary}" />
-                </StackPanel>
+                    <Grid Grid.Column="2">
+                        <TextBox
+                            x:Name="EventSearchTextBox"
+                            Height="40"
+                            Padding="9,5,34,5"
+                            AutomationProperties.Name="搜索事件"
+                            GotKeyboardFocus="EventSearchTextBox_OnGotKeyboardFocus"
+                            KeyDown="EventSearchTextBox_OnKeyDown"
+                            MaxLength="100"
+                            Style="{StaticResource InputTextBoxStyle}"
+                            Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock
+                            Margin="25,0,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Foreground="{StaticResource TextMutedBrush}"
+                            IsHitTestVisible="False"
+                            Text="搜索事件">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SearchText}" Value="">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <Button
+                            Margin="0,0,4,0"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            AutomationProperties.Name="清空搜索"
+                            Click="ClearEventSearchButton_OnClick"
+                            Content="×"
+                            Style="{StaticResource SearchClearButtonStyle}"
+                            Visibility="{Binding HasSearchText, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                        <Popup
+                            x:Name="EventSearchHistoryPopup"
+                            AllowsTransparency="True"
+                            Placement="Bottom"
+                            PlacementTarget="{Binding ElementName=EventSearchTextBox}"
+                            PopupAnimation="Fade"
+                            StaysOpen="True">
+                            <Border
+                                Width="280"
+                                Margin="0,5,0,0"
+                                Padding="8"
+                                Background="{StaticResource SurfaceBrush}"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="9">
+                                <StackPanel>
+                                    <TextBlock
+                                        Margin="8,4,8,6"
+                                        FontSize="11"
+                                        Foreground="{StaticResource TextMutedBrush}"
+                                        Text="最近搜索" />
+                                    <ItemsControl ItemsSource="{Binding SearchHistory}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,1">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="30" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Button
+                                                        AutomationProperties.Name="搜索历史记录"
+                                                        Click="SearchHistoryItem_OnClick"
+                                                        Content="{Binding}"
+                                                        Style="{StaticResource SearchHistoryRowButtonStyle}"
+                                                        Tag="{Binding}" />
+                                                    <Button
+                                                        Grid.Column="1"
+                                                        AutomationProperties.Name="删除搜索记录"
+                                                        Click="DeleteSearchHistoryButton_OnClick"
+                                                        Content="×"
+                                                        Style="{StaticResource SearchClearButtonStyle}"
+                                                        Tag="{Binding}" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <Border
+                                        Height="1"
+                                        Margin="8,6,8,2"
+                                        Background="{StaticResource BorderBrush}" />
+                                    <Button
+                                        AutomationProperties.Name="清空搜索记录"
+                                        Click="ClearSearchHistoryButton_OnClick"
+                                        Content="清空搜索记录"
+                                        Style="{StaticResource SearchHistoryClearButtonStyle}" />
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                </Grid>
 
                 <StackPanel
                     x:Name="GlobalActionsPanel"
@@ -259,7 +475,7 @@
                         ToolTipService.ShowDuration="10000">
                         <Button.ToolTip>
                             <ToolTip Placement="Top">
-                                <TextBlock Text="重启所有已开启事件的倒计时" />
+                                <TextBlock Text="重启所有已开启固定时间事件，并恢复全部事件" />
                             </ToolTip>
                         </Button.ToolTip>
                     </Button>
@@ -387,7 +603,7 @@
                 VerticalScrollBarVisibility="Auto">
                 <ItemsControl
                     x:Name="EventItemsControl"
-                    ItemsSource="{Binding Events}">
+                    ItemsSource="{Binding FilteredEvents}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type viewModels:EventViewModel}">
                             <Border
@@ -871,49 +1087,303 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontSize="15"
+                        Foreground="{StaticResource TextMutedBrush}"
+                        IsHitTestVisible="False"
+                        Text="没有找到匹配的事件"
+                        Visibility="{Binding ShowNoSearchResults, Converter={StaticResource BooleanToVisibilityConverter}}" />
                 </Grid>
 
                 <Grid
                     x:Name="SettingsPage"
                     AutomationProperties.AutomationId="SettingsPage"
                     Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="138" />
+                        <ColumnDefinition Width="18" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
                     <Border
-                        MaxWidth="760"
-                        Margin="0,12,0,0"
-                        Padding="26"
-                        HorizontalAlignment="Stretch"
+                        Grid.Column="0"
+                        Margin="0,12,0,18"
+                        Padding="10"
                         VerticalAlignment="Top"
                         Background="{StaticResource SurfaceBrush}"
                         BorderBrush="{StaticResource BorderBrush}"
                         BorderThickness="1"
-                        CornerRadius="12">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="250" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Margin="0,0,32,0">
-                                <TextBlock
-                                    FontSize="19"
-                                    FontWeight="SemiBold"
-                                    Text="渲染模式" />
-                                <TextBlock
-                                    Margin="0,8,0,0"
-                                    FontSize="13"
-                                    Foreground="{StaticResource TextSecondaryBrush}"
-                                    Text="兼容模式使用 CPU 绘制界面；硬件优先模式由 WPF 根据显卡能力选择渲染路径。"
-                                    TextWrapping="Wrap" />
-                            </StackPanel>
-                            <ComboBox
-                                Grid.Column="1"
-                                VerticalAlignment="Center"
-                                AutomationProperties.Name="渲染模式"
-                                DisplayMemberPath="Label"
-                                ItemsSource="{Binding RenderingModeChoices}"
-                                SelectedItem="{Binding SelectedRenderingModeChoice, Mode=TwoWay}"
-                                Style="{StaticResource InputComboBoxStyle}" />
-                        </Grid>
+                        CornerRadius="10">
+                        <StackPanel>
+                            <TextBlock
+                                Margin="10,6,10,9"
+                                FontSize="12"
+                                FontWeight="SemiBold"
+                                Foreground="{StaticResource TextMutedBrush}"
+                                Text="设置导航" />
+                            <Button
+                                AutomationProperties.Name="定位到渲染模式设置"
+                                Click="RenderingSettingsIndexButton_OnClick"
+                                Content="渲染模式"
+                                Style="{StaticResource SettingsIndexButtonStyle}" />
+                            <Button
+                                Margin="0,2,0,0"
+                                AutomationProperties.Name="定位到通知设置"
+                                Click="NotificationSettingsIndexButton_OnClick"
+                                Content="通知"
+                                Style="{StaticResource SettingsIndexButtonStyle}" />
+                            <Button
+                                Margin="0,2,0,0"
+                                AutomationProperties.Name="定位到恢复默认设置"
+                                Click="RestoreDefaultsSettingsIndexButton_OnClick"
+                                Content="恢复默认设置"
+                                Style="{StaticResource SettingsIndexButtonStyle}" />
+                        </StackPanel>
                     </Border>
+                    <ScrollViewer
+                        x:Name="SettingsScrollViewer"
+                        Grid.Column="2"
+                        HorizontalScrollBarVisibility="Disabled"
+                        VerticalScrollBarVisibility="Auto">
+                        <StackPanel
+                            x:Name="SettingsContentPanel"
+                            MaxWidth="800"
+                            Margin="0,12,0,18"
+                            HorizontalAlignment="Stretch">
+                            <Border
+                                x:Name="RenderingSettingsSection"
+                                Padding="26"
+                                Background="{StaticResource SurfaceBrush}"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="12">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="250" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,32,0">
+                                        <TextBlock
+                                            FontSize="19"
+                                            FontWeight="SemiBold"
+                                            Text="渲染模式" />
+                                        <TextBlock
+                                            Margin="0,8,0,0"
+                                            FontSize="13"
+                                            Foreground="{StaticResource TextSecondaryBrush}"
+                                            Text="兼容模式使用 CPU 绘制界面；硬件优先模式由 WPF 根据显卡能力选择渲染路径。"
+                                            TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <ComboBox
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        AutomationProperties.Name="渲染模式"
+                                        DisplayMemberPath="Label"
+                                        ItemsSource="{Binding RenderingModeChoices}"
+                                        SelectedItem="{Binding SelectedRenderingModeChoice, Mode=TwoWay}"
+                                        Style="{StaticResource InputComboBoxStyle}" />
+                                </Grid>
+                            </Border>
+
+                            <Border
+                                x:Name="NotificationSettingsSection"
+                                Margin="0,14,0,0"
+                                Padding="26"
+                                Background="{StaticResource SurfaceBrush}"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="12">
+                                <StackPanel>
+                                    <TextBlock
+                                        FontSize="19"
+                                        FontWeight="SemiBold"
+                                        Text="通知" />
+
+                                    <Grid Margin="0,22,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="330" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Margin="0,0,32,0">
+                                            <TextBlock
+                                                FontSize="14"
+                                                FontWeight="SemiBold"
+                                                Text="统一通知延迟时间" />
+                                            <TextBlock
+                                                Margin="0,6,0,0"
+                                                FontSize="12"
+                                                Foreground="{StaticResource TextSecondaryBrush}"
+                                                Text="设置通知延迟的时间。"
+                                                TextWrapping="Wrap" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1">
+                                            <StackPanel
+                                                x:Name="SnoozeDurationInputGroup"
+                                                HorizontalAlignment="Left"
+                                                Orientation="Horizontal"
+                                                LostKeyboardFocus="SnoozeDurationInputGroup_OnLostKeyboardFocus">
+                                                <StackPanel
+                                                    Margin="0,0,7,0"
+                                                    Orientation="Horizontal"
+                                                    Visibility="{Binding ShowSnoozeDurationDays, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                    <TextBox
+                                                        Width="72"
+                                                        MaxLength="3"
+                                                        AutomationProperties.Name="通知延迟天数"
+                                                        KeyDown="SnoozeDurationTextBox_OnKeyDown"
+                                                        Style="{StaticResource IntervalPartInputStyle}"
+                                                        Text="{Binding SnoozeDurationDaysInput, UpdateSourceTrigger=PropertyChanged}" />
+                                                    <TextBlock
+                                                        Margin="4,0,0,0"
+                                                        VerticalAlignment="Center"
+                                                        FontSize="13"
+                                                        Foreground="{StaticResource TextSecondaryBrush}"
+                                                        Text="天" />
+                                                </StackPanel>
+                                                <StackPanel
+                                                    Margin="0,0,7,0"
+                                                    Orientation="Horizontal"
+                                                    Visibility="{Binding ShowSnoozeDurationHours, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                    <TextBox
+                                                        Width="68"
+                                                        MaxLength="4"
+                                                        AutomationProperties.Name="通知延迟小时"
+                                                        KeyDown="SnoozeDurationTextBox_OnKeyDown"
+                                                        Style="{StaticResource IntervalPartInputStyle}"
+                                                        Text="{Binding SnoozeDurationHoursInput, UpdateSourceTrigger=PropertyChanged}" />
+                                                    <TextBlock
+                                                        Margin="4,0,0,0"
+                                                        VerticalAlignment="Center"
+                                                        FontSize="13"
+                                                        Foreground="{StaticResource TextSecondaryBrush}"
+                                                        Text="小时" />
+                                                </StackPanel>
+                                                <TextBox
+                                                    Width="78"
+                                                    MaxLength="6"
+                                                    AutomationProperties.Name="通知延迟分钟"
+                                                    KeyDown="SnoozeDurationTextBox_OnKeyDown"
+                                                    Style="{StaticResource IntervalPartInputStyle}"
+                                                    Text="{Binding SnoozeDurationMinutesInput, UpdateSourceTrigger=PropertyChanged}" />
+                                                <TextBlock
+                                                    Margin="4,0,0,0"
+                                                    VerticalAlignment="Center"
+                                                    FontSize="13"
+                                                    Foreground="{StaticResource TextSecondaryBrush}"
+                                                    Text="分钟" />
+                                            </StackPanel>
+                                            <TextBlock
+                                                Margin="2,5,0,0"
+                                                FontSize="12"
+                                                Foreground="{StaticResource DangerBrush}"
+                                                Text="{Binding SnoozeDurationError}"
+                                                Visibility="{Binding HasSnoozeDurationError, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Border
+                                        Height="1"
+                                        Margin="0,22"
+                                        Background="{StaticResource BorderBrush}" />
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="330" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Margin="0,0,32,0">
+                                            <TextBlock
+                                                FontSize="14"
+                                                FontWeight="SemiBold"
+                                                Text="延迟时间超过事件间隔时" />
+                                            <TextBlock
+                                                Margin="0,6,0,0"
+                                                FontSize="12"
+                                                Foreground="{StaticResource TextSecondaryBrush}"
+                                                Text="此选项只作用于提醒间隔小于上一选项设定时间的固定时间事件。"
+                                                TextWrapping="Wrap" />
+                                        </StackPanel>
+                                        <ComboBox
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            AutomationProperties.Name="延迟时间超过事件间隔时"
+                                            DisplayMemberPath="Label"
+                                            ItemsSource="{Binding SnoozeOverflowPolicyChoices}"
+                                            SelectedItem="{Binding SelectedSnoozeOverflowPolicyChoice, Mode=TwoWay}"
+                                            Style="{StaticResource InputComboBoxStyle}" />
+                                    </Grid>
+
+                                    <Border
+                                        Height="1"
+                                        Margin="0,22"
+                                        Background="{StaticResource BorderBrush}" />
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="330" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Margin="0,0,32,0">
+                                            <TextBlock
+                                                FontSize="14"
+                                                FontWeight="SemiBold"
+                                                Text="通知横幅显示时长" />
+                                            <TextBlock
+                                                Margin="0,6,0,0"
+                                                FontSize="12"
+                                                Foreground="{StaticResource TextSecondaryBrush}"
+                                                Text="横幅淡出后通知仍会进入通知中心。"
+                                                TextWrapping="Wrap" />
+                                        </StackPanel>
+                                        <ComboBox
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            AutomationProperties.Name="通知横幅显示时长"
+                                            DisplayMemberPath="Label"
+                                            ItemsSource="{Binding NotificationDisplayDurationChoices}"
+                                            SelectedItem="{Binding SelectedNotificationDisplayDurationChoice, Mode=TwoWay}"
+                                            Style="{StaticResource InputComboBoxStyle}" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <Border
+                                x:Name="RestoreDefaultsSettingsSection"
+                                Margin="0,14,0,0"
+                                Padding="26"
+                                Background="{StaticResource SurfaceBrush}"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="12">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,32,0">
+                                        <TextBlock
+                                            FontSize="16"
+                                            FontWeight="SemiBold"
+                                            Text="恢复默认设置" />
+                                        <TextBlock
+                                            Margin="0,6,0,0"
+                                            FontSize="12"
+                                            Foreground="{StaticResource TextSecondaryBrush}"
+                                            Text="恢复所有设置为默认，并且不会删除事件记录。"
+                                            TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <Button
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        AutomationProperties.Name="恢复默认设置"
+                                        Click="RestoreDefaultSettingsButton_OnClick"
+                                        Content="恢复默认设置"
+                                        Style="{StaticResource DangerButtonStyle}" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
                 </Grid>
             </Grid>
         </Grid>

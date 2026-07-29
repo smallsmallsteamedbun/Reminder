@@ -43,14 +43,17 @@ public partial class App : System.Windows.Application
         IReminderNotificationService notificationService;
         try
         {
-            notificationService = new WindowsToastNotificationService();
+            notificationService = new WindowsToastNotificationService(
+                _settingsService);
         }
         catch (Exception exception)
         {
             notificationService = new UnavailableNotificationService(exception.Message);
         }
 
-        _engine = new ReminderEngine(notificationService);
+        _engine = new ReminderEngine(
+            notificationService,
+            runtimeSettings: _settingsService);
 
         try
         {
@@ -75,13 +78,16 @@ public partial class App : System.Windows.Application
             loadResult,
             out var recoveryFailed,
             out var restoredState);
-        if (restoredState is not null &&
-            _settingsService.RenderingMode !=
-            restoredState.Settings.RenderingMode)
+        if (restoredState is not null)
         {
-            _settingsService.SetRenderingMode(
-                restoredState.Settings.RenderingMode);
-            ApplyRenderingMode(_settingsService.RenderingMode);
+            var previousRenderingMode =
+                _settingsService.RenderingMode;
+            _settingsService.Apply(restoredState.Settings);
+            if (previousRenderingMode !=
+                _settingsService.RenderingMode)
+            {
+                ApplyRenderingMode(_settingsService.RenderingMode);
+            }
         }
 
         if (!stateRestored)

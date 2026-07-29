@@ -9,5 +9,4 @@ public static class ReminderDefaults
     public const int MaximumTerminationOccurrences = 100;
 
     public static readonly TimeSpan SnoozeDuration = TimeSpan.FromMinutes(5);
-    public static readonly TimeSpan NotificationVisibleDuration = TimeSpan.FromSeconds(10);
 }

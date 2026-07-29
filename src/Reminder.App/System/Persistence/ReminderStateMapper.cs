@@ -1,5 +1,7 @@
 using Reminder.App.Logic.Models;
+using Reminder.App.Logic.Services;
 using Reminder.App.Logic.State;
+using Reminder.App.SystemModule.AppInfo;
 using Reminder.App.SystemModule.Settings;
 
 namespace Reminder.App.SystemModule.Persistence;
@@ -27,7 +29,14 @@ internal static class ReminderStateMapper
             },
             PendingMissedEventIds =
                 state.EngineState.PendingMissedEventIds.ToList(),
-            RenderingMode = state.Settings.RenderingMode
+            RenderingMode = state.Settings.RenderingMode,
+            SnoozeDurationMinutes =
+                state.Settings.SnoozeDurationMinutes,
+            SnoozeOverflowPolicy =
+                state.Settings.SnoozeOverflowPolicy,
+            NotificationDisplayDuration =
+                state.Settings.NotificationDisplayDuration,
+            SearchHistory = state.Settings.SearchHistory.ToList()
         };
     }
 
@@ -66,6 +75,35 @@ internal static class ReminderStateMapper
                 throw new ArgumentException("渲染模式无效。");
             }
 
+            if (document.Version >= 4)
+            {
+                if (document.SnoozeDurationMinutes is
+                    < ReminderDefaults.MinimumIntervalMinutes or
+                    > ReminderDefaults.MaximumIntervalMinutes)
+                {
+                    throw new ArgumentException(
+                        "统一通知延迟时间无效。");
+                }
+
+                if (!Enum.IsDefined(document.SnoozeOverflowPolicy))
+                {
+                    throw new ArgumentException(
+                        "通知延迟超出事件间隔时的策略无效。");
+                }
+
+                if (!Enum.IsDefined(document.NotificationDisplayDuration))
+                {
+                    throw new ArgumentException(
+                        "Windows 通知显示时长无效。");
+                }
+
+                if (document.SearchHistory is null)
+                {
+                    throw new ArgumentException(
+                        "搜索历史记录无效。");
+                }
+            }
+
             state = new ReminderPersistedState
             {
                 EngineState = new ReminderEngineState
@@ -95,7 +133,24 @@ internal static class ReminderStateMapper
                     RenderingMode =
                         document.Version == 1
                             ? ReminderRenderingMode.HardwarePreferred
-                            : document.RenderingMode
+                            : document.RenderingMode,
+                    SnoozeDurationMinutes =
+                        document.Version < 4
+                            ? (int)ReminderDefaults.SnoozeDuration.TotalMinutes
+                            : document.SnoozeDurationMinutes,
+                    SnoozeOverflowPolicy =
+                        document.Version < 4
+                            ? ReminderSnoozeOverflowPolicy
+                                .ShortenToFixedInterval
+                            : document.SnoozeOverflowPolicy,
+                    NotificationDisplayDuration =
+                        document.Version < 4
+                            ? ReminderNotificationDisplayDuration.Short
+                            : document.NotificationDisplayDuration,
+                    SearchHistory =
+                        document.Version < 4
+                            ? []
+                            : document.SearchHistory
                 }
             };
             return true;

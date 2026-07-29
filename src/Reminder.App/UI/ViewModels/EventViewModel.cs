@@ -154,6 +154,8 @@ public sealed class EventViewModel : ObservableObject
 
     public Guid Id => _snapshot.Id;
 
+    public string Name => _snapshot.Name;
+
     public RelayCommand PauseCommand { get; }
 
     public RelayCommand RestartCommand { get; }
@@ -851,6 +853,7 @@ public sealed class EventViewModel : ObservableObject
     public void ApplySnapshot(ReminderEventSnapshot snapshot)
     {
         var previousSnapshot = _snapshot;
+        var nameChanged = snapshot.Name != previousSnapshot.Name;
         var nameInputWasUnmodified = NameInput == previousSnapshot.Name;
         var intervalChanged =
             snapshot.IntervalMinutes != previousSnapshot.IntervalMinutes;
@@ -958,6 +961,10 @@ public sealed class EventViewModel : ObservableObject
         ScheduleSummary = CreateScheduleSummary(snapshot);
 
         OnPropertyChanged(nameof(Id));
+        if (nameChanged)
+        {
+            OnPropertyChanged(nameof(Name));
+        }
         OnPropertyChanged(nameof(CardOpacity));
         OnPropertyChanged(nameof(CanPauseOrResume));
         OnPropertyChanged(nameof(CountdownLabel));

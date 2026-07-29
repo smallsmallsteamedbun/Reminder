@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows.Threading;
 using Reminder.App.Logic.Models;
 using Reminder.App.Logic.Services;
@@ -13,6 +14,14 @@ public sealed record GlobalPauseChoice(
 
 public sealed record RenderingModeChoice(
     ReminderRenderingMode Value,
+    string Label);
+
+public sealed record SnoozeOverflowPolicyChoice(
+    ReminderSnoozeOverflowPolicy Value,
+    string Label);
+
+public sealed record NotificationDisplayDurationChoice(
+    ReminderNotificationDisplayDuration Value,
     string Label);
 
 public sealed class MainViewModel : ObservableObject, IDisposable
@@ -42,6 +51,29 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             "硬件优先渲染")
     ];
 
+    private static readonly IReadOnlyList<SnoozeOverflowPolicyChoice>
+        SnoozeOverflowPolicyChoiceValues =
+    [
+        new(
+            ReminderSnoozeOverflowPolicy.ShortenToFixedInterval,
+            "缩短为事件提醒间隔"),
+        new(
+            ReminderSnoozeOverflowPolicy.UseUnifiedDuration,
+            "仍使用统一延迟时间")
+    ];
+
+    private static readonly
+        IReadOnlyList<NotificationDisplayDurationChoice>
+        NotificationDisplayDurationChoiceValues =
+    [
+        new(
+            ReminderNotificationDisplayDuration.Short,
+            "较短（Windows 默认，约 7 秒）"),
+        new(
+            ReminderNotificationDisplayDuration.Long,
+            "较长（约 25 秒）")
+    ];
+
     private readonly ReminderEngine _engine;
     private readonly Dispatcher _dispatcher;
     private readonly ReminderApplicationSettingsService _settings;
@@ -54,6 +86,19 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         GlobalPauseChoiceValues[0];
     private bool _synchronizingGlobalPause;
     private RenderingModeChoice _selectedRenderingModeChoice;
+    private SnoozeOverflowPolicyChoice
+        _selectedSnoozeOverflowPolicyChoice;
+    private NotificationDisplayDurationChoice
+        _selectedNotificationDisplayDurationChoice;
+    private string _snoozeDurationDaysInput;
+    private string _snoozeDurationHoursInput;
+    private string _snoozeDurationMinutesInput;
+    private string _snoozeDurationError = string.Empty;
+    private bool _showSnoozeDurationDays;
+    private bool _showSnoozeDurationHours;
+    private bool _snoozeDurationInputDirty;
+    private bool _synchronizingSettings;
+    private string _searchText = string.Empty;
     private HomeReminderViewModel? _selectedHomeEvent;
     private Guid? _previewedHomeEventId;
 
@@ -67,14 +112,34 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _settings = settings;
         _selectedRenderingModeChoice =
             FindRenderingModeChoice(settings.RenderingMode);
+        _selectedSnoozeOverflowPolicyChoice =
+            FindSnoozeOverflowPolicyChoice(
+                settings.SnoozeOverflowPolicy);
+        _selectedNotificationDisplayDurationChoice =
+            FindNotificationDisplayDurationChoice(
+                settings.NotificationDisplayDuration);
+        var snoozeParts = SplitDuration(
+            settings.SnoozeDurationMinutes);
+        _snoozeDurationDaysInput =
+            snoozeParts.Days.ToString();
+        _snoozeDurationHoursInput =
+            snoozeParts.Hours.ToString();
+        _snoozeDurationMinutesInput =
+            snoozeParts.Minutes.ToString();
+        _showSnoozeDurationDays = snoozeParts.ShowDays;
+        _showSnoozeDurationHours = snoozeParts.ShowHours;
         _engine.StateChanged += OnEngineStateChanged;
 
         AddEventCommand = new RelayCommand(AddEvent);
+        ClearSearchCommand = new RelayCommand(ClearSearch);
+        ClearSearchHistoryCommand =
+            new RelayCommand(ClearSearchHistory);
         ToggleGlobalPauseCommand =
             new RelayCommand(ToggleGlobalPause);
         RestartAllCommand = new RelayCommand(_engine.RestartAll);
 
         Refresh();
+        SynchronizeSearchHistory();
     }
 
     public MainViewModel(
@@ -108,9 +173,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<EventViewModel> Events { get; } = [];
 
+    public ObservableCollection<EventViewModel> FilteredEvents { get; } = [];
+
+    public ObservableCollection<string> SearchHistory { get; } = [];
+
     public ObservableCollection<HomeReminderViewModel> HomeEvents { get; } = [];
 
     public RelayCommand AddEventCommand { get; }
+
+    public RelayCommand ClearSearchCommand { get; }
+
+    public RelayCommand ClearSearchHistoryCommand { get; }
 
     public RelayCommand ToggleGlobalPauseCommand { get; }
 
@@ -122,6 +195,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public IReadOnlyList<RenderingModeChoice> RenderingModeChoices =>
         RenderingModeChoiceValues;
 
+    public IReadOnlyList<SnoozeOverflowPolicyChoice>
+        SnoozeOverflowPolicyChoices =>
+        SnoozeOverflowPolicyChoiceValues;
+
+    public IReadOnlyList<NotificationDisplayDurationChoice>
+        NotificationDisplayDurationChoices =>
+        NotificationDisplayDurationChoiceValues;
+
     public int EventCount => Events.Count;
 
     public int ActiveEventCount
@@ -131,6 +212,28 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     }
 
     public string EventSummary => $"共 {EventCount} 个事件 · {ActiveEventCount} 个运行中";
+
+    public string SearchText
+    {
+        get => _searchText;
+        set
+        {
+            if (!SetProperty(ref _searchText, value ?? string.Empty))
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(HasSearchText));
+            RefreshFilteredEvents();
+        }
+    }
+
+    public bool HasSearchText => !string.IsNullOrWhiteSpace(SearchText);
+
+    public bool HasSearchHistory => SearchHistory.Count > 0;
+
+    public bool ShowNoSearchResults =>
+        HasSearchText && FilteredEvents.Count == 0;
 
     public bool IsGlobalPaused
     {
@@ -187,7 +290,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         set
         {
             if (value is null ||
-                !SetProperty(ref _selectedRenderingModeChoice, value))
+                !SetProperty(ref _selectedRenderingModeChoice, value) ||
+                _synchronizingSettings)
             {
                 return;
             }
@@ -198,6 +302,112 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
         }
     }
+
+    public SnoozeOverflowPolicyChoice SelectedSnoozeOverflowPolicyChoice
+    {
+        get => _selectedSnoozeOverflowPolicyChoice;
+        set
+        {
+            if (value is null ||
+                !SetProperty(
+                    ref _selectedSnoozeOverflowPolicyChoice,
+                    value) ||
+                _synchronizingSettings)
+            {
+                return;
+            }
+
+            _settings.SetSnoozeOverflowPolicy(value.Value);
+        }
+    }
+
+    public NotificationDisplayDurationChoice
+        SelectedNotificationDisplayDurationChoice
+    {
+        get => _selectedNotificationDisplayDurationChoice;
+        set
+        {
+            if (value is null ||
+                !SetProperty(
+                    ref _selectedNotificationDisplayDurationChoice,
+                    value) ||
+                _synchronizingSettings)
+            {
+                return;
+            }
+
+            _settings.SetNotificationDisplayDuration(value.Value);
+        }
+    }
+
+    public string SnoozeDurationDaysInput
+    {
+        get => _snoozeDurationDaysInput;
+        set
+        {
+            if (SetProperty(
+                    ref _snoozeDurationDaysInput,
+                    value ?? string.Empty))
+            {
+                MarkSnoozeDurationInputDirty();
+            }
+        }
+    }
+
+    public string SnoozeDurationHoursInput
+    {
+        get => _snoozeDurationHoursInput;
+        set
+        {
+            if (SetProperty(
+                    ref _snoozeDurationHoursInput,
+                    value ?? string.Empty))
+            {
+                MarkSnoozeDurationInputDirty();
+            }
+        }
+    }
+
+    public string SnoozeDurationMinutesInput
+    {
+        get => _snoozeDurationMinutesInput;
+        set
+        {
+            if (SetProperty(
+                    ref _snoozeDurationMinutesInput,
+                    value ?? string.Empty))
+            {
+                MarkSnoozeDurationInputDirty();
+            }
+        }
+    }
+
+    public bool ShowSnoozeDurationDays
+    {
+        get => _showSnoozeDurationDays;
+        private set => SetProperty(ref _showSnoozeDurationDays, value);
+    }
+
+    public bool ShowSnoozeDurationHours
+    {
+        get => _showSnoozeDurationHours;
+        private set => SetProperty(ref _showSnoozeDurationHours, value);
+    }
+
+    public string SnoozeDurationError
+    {
+        get => _snoozeDurationError;
+        private set
+        {
+            if (SetProperty(ref _snoozeDurationError, value))
+            {
+                OnPropertyChanged(nameof(HasSnoozeDurationError));
+            }
+        }
+    }
+
+    public bool HasSnoozeDurationError =>
+        SnoozeDurationError.Length != 0;
 
     public HomeReminderViewModel? SelectedHomeEvent
     {
@@ -246,6 +456,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             if (!snapshotIds.Contains(Events[index].Id))
             {
+                Events[index].PropertyChanged -=
+                    OnEventViewModelPropertyChanged;
                 Events.RemoveAt(index);
             }
         }
@@ -259,6 +471,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     _engine,
                     snapshot,
                     eventViewModel => DeleteRequested?.Invoke(eventViewModel));
+                viewModel.PropertyChanged +=
+                    OnEventViewModelPropertyChanged;
                 Events.Add(viewModel);
             }
             else
@@ -267,6 +481,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
         }
 
+        RefreshFilteredEvents();
         UpdateHomeEvents(snapshots);
         ActiveEventCount = snapshots.Count(item => item.IsEffectivelyRunning);
         _synchronizingGlobalPause = true;
@@ -303,13 +518,95 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         _disposed = true;
         _engine.StateChanged -= OnEngineStateChanged;
+        foreach (var eventViewModel in Events)
+        {
+            eventViewModel.PropertyChanged -=
+                OnEventViewModelPropertyChanged;
+        }
     }
 
     private void AddEvent()
     {
+        ClearSearch();
         var eventId = _engine.AddDefaultEvent();
         Refresh();
         EventAdded?.Invoke(eventId);
+    }
+
+    public void CommitSearch()
+    {
+        var normalized =
+            ReminderApplicationSettingsService.NormalizeSearchQuery(
+                SearchText);
+        if (normalized.Length == 0)
+        {
+            return;
+        }
+
+        SearchText = normalized;
+        _settings.RecordSearchQuery(normalized);
+        SynchronizeSearchHistory();
+    }
+
+    public void SelectSearchHistory(string query)
+    {
+        SearchText =
+            ReminderApplicationSettingsService.NormalizeSearchQuery(query);
+        CommitSearch();
+    }
+
+    public void RemoveSearchHistory(string query)
+    {
+        _settings.RemoveSearchQuery(query);
+        SynchronizeSearchHistory();
+    }
+
+    public void ClearSearch()
+    {
+        SearchText = string.Empty;
+    }
+
+    public void ClearSearchHistory()
+    {
+        _settings.ClearSearchHistory();
+        SynchronizeSearchHistory();
+    }
+
+    public void CommitSnoozeDuration()
+    {
+        if (!_snoozeDurationInputDirty)
+        {
+            return;
+        }
+
+        if (!ReminderInputValidator.TryValidateIntervalParts(
+                SnoozeDurationDaysInput,
+                SnoozeDurationHoursInput,
+                SnoozeDurationMinutesInput,
+                out var minutes,
+                out var error))
+        {
+            SnoozeDurationError = error;
+            return;
+        }
+
+        _settings.SetSnoozeDurationMinutes(minutes);
+        SnoozeDurationError = string.Empty;
+        ApplyCanonicalSnoozeDuration(minutes);
+    }
+
+    public bool RestoreDefaultSettings()
+    {
+        var previousRenderingMode = _settings.RenderingMode;
+        var changed = _settings.RestoreDefaults();
+        SynchronizeSettings();
+        if (previousRenderingMode != _settings.RenderingMode)
+        {
+            RenderingModeChangeRequested?.Invoke(
+                _settings.RenderingMode);
+        }
+
+        return changed;
     }
 
     private void ToggleGlobalPause()
@@ -348,6 +645,124 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         _dispatcher.BeginInvoke(Refresh, DispatcherPriority.DataBind);
+    }
+
+    private void OnEventViewModelPropertyChanged(
+        object? sender,
+        PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(EventViewModel.Name))
+        {
+            RefreshFilteredEvents();
+        }
+    }
+
+    private void RefreshFilteredEvents()
+    {
+        var tokens = SearchText.Split(
+            (char[]?)null,
+            StringSplitOptions.RemoveEmptyEntries |
+            StringSplitOptions.TrimEntries);
+        var desired = tokens.Length == 0
+            ? Events.ToArray()
+            : Events.Where(item =>
+                    tokens.All(token =>
+                        item.Name.Contains(
+                            token,
+                            StringComparison.OrdinalIgnoreCase)))
+                .ToArray();
+
+        for (var targetIndex = 0;
+             targetIndex < desired.Length;
+             targetIndex++)
+        {
+            var item = desired[targetIndex];
+            var currentIndex = FilteredEvents.IndexOf(item);
+            if (currentIndex < 0)
+            {
+                FilteredEvents.Insert(targetIndex, item);
+            }
+            else if (currentIndex != targetIndex)
+            {
+                FilteredEvents.Move(currentIndex, targetIndex);
+            }
+        }
+
+        var desiredSet = desired.ToHashSet();
+        for (var index = FilteredEvents.Count - 1;
+             index >= 0;
+             index--)
+        {
+            if (!desiredSet.Contains(FilteredEvents[index]))
+            {
+                FilteredEvents.RemoveAt(index);
+            }
+        }
+
+        OnPropertyChanged(nameof(ShowNoSearchResults));
+    }
+
+    private void SynchronizeSearchHistory()
+    {
+        var desired = _settings.SearchHistory;
+        if (SearchHistory.SequenceEqual(desired))
+        {
+            return;
+        }
+
+        SearchHistory.Clear();
+        foreach (var query in desired)
+        {
+            SearchHistory.Add(query);
+        }
+
+        OnPropertyChanged(nameof(HasSearchHistory));
+    }
+
+    private void SynchronizeSettings()
+    {
+        _synchronizingSettings = true;
+        try
+        {
+            SelectedRenderingModeChoice =
+                FindRenderingModeChoice(_settings.RenderingMode);
+            SelectedSnoozeOverflowPolicyChoice =
+                FindSnoozeOverflowPolicyChoice(
+                    _settings.SnoozeOverflowPolicy);
+            SelectedNotificationDisplayDurationChoice =
+                FindNotificationDisplayDurationChoice(
+                    _settings.NotificationDisplayDuration);
+            ApplyCanonicalSnoozeDuration(
+                _settings.SnoozeDurationMinutes);
+        }
+        finally
+        {
+            _synchronizingSettings = false;
+        }
+    }
+
+    private void MarkSnoozeDurationInputDirty()
+    {
+        if (!_synchronizingSettings)
+        {
+            _snoozeDurationInputDirty = true;
+        }
+
+        if (SnoozeDurationError.Length != 0)
+        {
+            SnoozeDurationError = string.Empty;
+        }
+    }
+
+    private void ApplyCanonicalSnoozeDuration(int totalMinutes)
+    {
+        var parts = SplitDuration(totalMinutes);
+        SnoozeDurationDaysInput = parts.Days.ToString();
+        SnoozeDurationHoursInput = parts.Hours.ToString();
+        SnoozeDurationMinutesInput = parts.Minutes.ToString();
+        ShowSnoozeDurationDays = parts.ShowDays;
+        ShowSnoozeDurationHours = parts.ShowHours;
+        _snoozeDurationInputDirty = false;
     }
 
     private void UpdateHomeEvents(
@@ -456,6 +871,35 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return RenderingModeChoiceValues.First(item => item.Value == mode);
     }
 
+    private static SnoozeOverflowPolicyChoice
+        FindSnoozeOverflowPolicyChoice(
+            ReminderSnoozeOverflowPolicy policy)
+    {
+        return SnoozeOverflowPolicyChoiceValues.First(
+            item => item.Value == policy);
+    }
+
+    private static NotificationDisplayDurationChoice
+        FindNotificationDisplayDurationChoice(
+            ReminderNotificationDisplayDuration duration)
+    {
+        return NotificationDisplayDurationChoiceValues.First(
+            item => item.Value == duration);
+    }
+
+    private static DurationParts SplitDuration(int totalMinutes)
+    {
+        var days = totalMinutes / (24 * 60);
+        var hours = totalMinutes % (24 * 60) / 60;
+        var minutes = totalMinutes % 60;
+        return new DurationParts(
+            days,
+            hours,
+            totalMinutes < 60 ? totalMinutes : minutes,
+            ShowDays: totalMinutes >= 24 * 60,
+            ShowHours: totalMinutes >= 60);
+    }
+
     private static string FormatCountdown(TimeSpan remaining)
     {
         var totalSeconds = Math.Max(
@@ -468,4 +912,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             ? $"{hours}时{minutes:00}分{seconds:00}秒"
             : $"{minutes:00}分{seconds:00}秒";
     }
+
+    private readonly record struct DurationParts(
+        int Days,
+        int Hours,
+        int Minutes,
+        bool ShowDays,
+        bool ShowHours);
 }

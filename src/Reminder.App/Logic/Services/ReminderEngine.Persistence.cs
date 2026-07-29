@@ -159,7 +159,8 @@ public sealed partial class ReminderEngine
                     reminderEvent.DueAt is not null
                         ? reminderEvent.DueAt.Value - now
                         : reminderEvent.FrozenRemaining,
-                    fixedInterval.Interval);
+                    TimeSpan.FromMinutes(
+                        ReminderDefaults.MaximumIntervalMinutes));
             }
 
         }
@@ -389,7 +390,9 @@ public sealed partial class ReminderEngine
                         ReminderDefaults.MaximumIntervalMinutes) ||
                 state.FrozenRemaining is null ||
                 state.FrozenRemaining < TimeSpan.Zero ||
-                state.FrozenRemaining > state.FixedInterval ||
+                state.FrozenRemaining >
+                    TimeSpan.FromMinutes(
+                        ReminderDefaults.MaximumIntervalMinutes) ||
                 state.DeferredOccurrenceAt is not null ||
                 state.NextScheduledOccurrenceAt is not null)
             {

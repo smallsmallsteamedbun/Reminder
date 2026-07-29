@@ -10,6 +10,7 @@ public sealed partial class ReminderEngine : IDisposable
     private readonly List<ReminderEvent> _events = [];
     private readonly HashSet<Guid> _pendingMissedEventIds = [];
     private readonly IReminderNotificationService _notificationService;
+    private readonly IReminderRuntimeSettings _runtimeSettings;
     private readonly ReminderScheduler _scheduler;
     private readonly TimeProvider _timeProvider;
     private ReminderGlobalPauseDuration _globalPauseDuration =
@@ -21,10 +22,13 @@ public sealed partial class ReminderEngine : IDisposable
 
     public ReminderEngine(
         IReminderNotificationService notificationService,
-        TimeProvider? timeProvider = null)
+        TimeProvider? timeProvider = null,
+        IReminderRuntimeSettings? runtimeSettings = null)
     {
         _notificationService = notificationService;
         _timeProvider = timeProvider ?? TimeProvider.System;
+        _runtimeSettings =
+            runtimeSettings ?? DefaultReminderRuntimeSettings.Instance;
         _notificationService.ResponseReceived += OnNotificationResponseReceived;
         _scheduler = new ReminderScheduler(OnSchedulerElapsed, _timeProvider);
     }
@@ -557,6 +561,7 @@ public sealed partial class ReminderEngine : IDisposable
         {
             ThrowIfDisposed();
             var now = Now;
+            ResumeAllLocked(now);
             foreach (var reminderEvent in _events.Where(
                          item => item.Schedule is FixedIntervalSchedule &&
                                  item.IsEnabled))
@@ -569,7 +574,6 @@ public sealed partial class ReminderEngine : IDisposable
 
                 ClearNotificationStateLocked(reminderEvent);
                 reminderEvent.SystemBlockInterruptedActiveNotification = false;
-                ResumeLocked(reminderEvent, now);
                 reminderEvent.FrozenRemaining = fixedInterval.Interval;
                 reminderEvent.DueAt =
                     reminderEvent.FixedClockBlockReasons ==
@@ -803,7 +807,7 @@ public sealed partial class ReminderEngine : IDisposable
                         notificationId,
                         reminderEvent.Name,
                         now,
-                        ReminderDefaults.NotificationVisibleDuration,
+                        _runtimeSettings.NotificationDisplayDuration,
                         RequestDisplayAttention:
                             _systemState.IsDisplayOff));
                 stateChanged = true;
@@ -1346,12 +1350,16 @@ public sealed partial class ReminderEngine : IDisposable
         }
     }
 
-    private static TimeSpan GetSnoozeDuration(ReminderEvent reminderEvent)
+    private TimeSpan GetSnoozeDuration(ReminderEvent reminderEvent)
     {
-        return reminderEvent.Schedule is FixedIntervalSchedule fixedInterval &&
-               fixedInterval.Interval < ReminderDefaults.SnoozeDuration
-            ? fixedInterval.Interval
-            : ReminderDefaults.SnoozeDuration;
+        var configuredDuration = _runtimeSettings.SnoozeDuration;
+        return
+            _runtimeSettings.SnoozeOverflowPolicy ==
+                ReminderSnoozeOverflowPolicy.ShortenToFixedInterval &&
+            reminderEvent.Schedule is FixedIntervalSchedule fixedInterval &&
+            fixedInterval.Interval < configuredDuration
+                ? fixedInterval.Interval
+                : configuredDuration;
     }
 
     private void RaiseStateChanged()
