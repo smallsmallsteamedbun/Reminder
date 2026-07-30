@@ -29,7 +29,10 @@ internal static class ReminderStateMapper
             },
             PendingMissedEventIds =
                 state.EngineState.PendingMissedEventIds.ToList(),
+            ThemeMode = state.Settings.ThemeMode,
             RenderingMode = state.Settings.RenderingMode,
+            StartWithWindows = state.Settings.StartWithWindows,
+            SilentStart = state.Settings.SilentStart,
             SnoozeDurationMinutes =
                 state.Settings.SnoozeDurationMinutes,
             SnoozeOverflowPolicy =
@@ -73,6 +76,12 @@ internal static class ReminderStateMapper
             if (!Enum.IsDefined(document.RenderingMode))
             {
                 throw new ArgumentException("渲染模式无效。");
+            }
+
+            if (document.Version >= 5 &&
+                !Enum.IsDefined(document.ThemeMode))
+            {
+                throw new ArgumentException("主题模式无效。");
             }
 
             if (document.Version >= 4)
@@ -130,10 +139,20 @@ internal static class ReminderStateMapper
                 },
                 Settings = new ReminderApplicationSettings
                 {
+                    ThemeMode =
+                        document.Version < 5
+                            ? ReminderThemeMode.FollowSystem
+                            : document.ThemeMode,
                     RenderingMode =
                         document.Version == 1
                             ? ReminderRenderingMode.HardwarePreferred
                             : document.RenderingMode,
+                    StartWithWindows =
+                        document.Version >= 5 &&
+                        document.StartWithWindows,
+                    SilentStart =
+                        document.Version >= 5 &&
+                        document.SilentStart,
                     SnoozeDurationMinutes =
                         document.Version < 4
                             ? (int)ReminderDefaults.SnoozeDuration.TotalMinutes

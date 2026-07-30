@@ -9,7 +9,10 @@ public sealed class ReminderApplicationSettingsService :
     public const int MaximumSearchHistoryCount = 5;
 
     private readonly object _gate = new();
+    private ReminderThemeMode _themeMode;
     private ReminderRenderingMode _renderingMode;
+    private bool _startWithWindows;
+    private bool _silentStart;
     private int _snoozeDurationMinutes;
     private ReminderSnoozeOverflowPolicy _snoozeOverflowPolicy;
     private ReminderNotificationDisplayDuration _notificationDisplayDuration;
@@ -18,9 +21,18 @@ public sealed class ReminderApplicationSettingsService :
     public ReminderApplicationSettingsService(
         ReminderApplicationSettings? initialSettings = null)
     {
+        _themeMode =
+            initialSettings is not null &&
+            Enum.IsDefined(initialSettings.ThemeMode)
+                ? initialSettings.ThemeMode
+                : ReminderThemeMode.FollowSystem;
         _renderingMode =
             initialSettings?.RenderingMode ??
             ReminderRenderingMode.HardwarePreferred;
+        _startWithWindows =
+            initialSettings?.StartWithWindows == true;
+        _silentStart =
+            initialSettings?.SilentStart == true;
         _snoozeDurationMinutes = IsValidSnoozeDuration(
             initialSettings?.SnoozeDurationMinutes)
             ? initialSettings!.SnoozeDurationMinutes
@@ -41,6 +53,17 @@ public sealed class ReminderApplicationSettingsService :
 
     public event EventHandler? SettingsChanged;
 
+    public ReminderThemeMode ThemeMode
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _themeMode;
+            }
+        }
+    }
+
     public ReminderRenderingMode RenderingMode
     {
         get
@@ -48,6 +71,28 @@ public sealed class ReminderApplicationSettingsService :
             lock (_gate)
             {
                 return _renderingMode;
+            }
+        }
+    }
+
+    public bool StartWithWindows
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _startWithWindows;
+            }
+        }
+    }
+
+    public bool SilentStart
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _silentStart;
             }
         }
     }
@@ -128,9 +173,65 @@ public sealed class ReminderApplicationSettingsService :
         return true;
     }
 
+    public bool SetThemeMode(ReminderThemeMode themeMode)
+    {
+        if (!Enum.IsDefined(themeMode))
+        {
+            return false;
+        }
+
+        lock (_gate)
+        {
+            if (_themeMode == themeMode)
+            {
+                return false;
+            }
+
+            _themeMode = themeMode;
+        }
+
+        SettingsChanged?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
+    public bool SetStartWithWindows(bool enabled)
+    {
+        lock (_gate)
+        {
+            if (_startWithWindows == enabled)
+            {
+                return false;
+            }
+
+            _startWithWindows = enabled;
+        }
+
+        SettingsChanged?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
+    public bool SetSilentStart(bool enabled)
+    {
+        lock (_gate)
+        {
+            if (_silentStart == enabled)
+            {
+                return false;
+            }
+
+            _silentStart = enabled;
+        }
+
+        SettingsChanged?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
     public bool Apply(ReminderApplicationSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
+        var themeMode = Enum.IsDefined(settings.ThemeMode)
+            ? settings.ThemeMode
+            : ReminderThemeMode.FollowSystem;
         var renderingMode = Enum.IsDefined(settings.RenderingMode)
             ? settings.RenderingMode
             : ReminderRenderingMode.HardwarePreferred;
@@ -152,9 +253,27 @@ public sealed class ReminderApplicationSettingsService :
         var changed = false;
         lock (_gate)
         {
+            if (_themeMode != themeMode)
+            {
+                _themeMode = themeMode;
+                changed = true;
+            }
+
             if (_renderingMode != renderingMode)
             {
                 _renderingMode = renderingMode;
+                changed = true;
+            }
+
+            if (_startWithWindows != settings.StartWithWindows)
+            {
+                _startWithWindows = settings.StartWithWindows;
+                changed = true;
+            }
+
+            if (_silentStart != settings.SilentStart)
+            {
+                _silentStart = settings.SilentStart;
                 changed = true;
             }
 
@@ -339,9 +458,27 @@ public sealed class ReminderApplicationSettingsService :
         var changed = false;
         lock (_gate)
         {
+            if (_themeMode != ReminderThemeMode.FollowSystem)
+            {
+                _themeMode = ReminderThemeMode.FollowSystem;
+                changed = true;
+            }
+
             if (_renderingMode != ReminderRenderingMode.HardwarePreferred)
             {
                 _renderingMode = ReminderRenderingMode.HardwarePreferred;
+                changed = true;
+            }
+
+            if (_startWithWindows)
+            {
+                _startWithWindows = false;
+                changed = true;
+            }
+
+            if (_silentStart)
+            {
+                _silentStart = false;
                 changed = true;
             }
 
@@ -384,7 +521,10 @@ public sealed class ReminderApplicationSettingsService :
         {
             return new ReminderApplicationSettings
             {
+                ThemeMode = _themeMode,
                 RenderingMode = _renderingMode,
+                StartWithWindows = _startWithWindows,
+                SilentStart = _silentStart,
                 SnoozeDurationMinutes = _snoozeDurationMinutes,
                 SnoozeOverflowPolicy = _snoozeOverflowPolicy,
                 NotificationDisplayDuration =

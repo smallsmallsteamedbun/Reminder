@@ -12,9 +12,8 @@ public sealed class SectionHighlightAnimator : IDisposable
     private static readonly Duration FlashDuration =
         new(TimeSpan.FromMilliseconds(760));
 
-    private readonly Brush _normalBackground;
-    private readonly Color _normalColor;
-    private readonly Color _highlightColor;
+    private Color _normalColor;
+    private Color _highlightColor;
     private Border? _activeSection;
     private SolidColorBrush? _animatedBrush;
     private ColorAnimationUsingKeyFrames? _activeAnimation;
@@ -25,7 +24,6 @@ public sealed class SectionHighlightAnimator : IDisposable
         Brush normalBackground,
         Brush highlightBackground)
     {
-        _normalBackground = normalBackground;
         _normalColor = GetColor(normalBackground);
         _highlightColor = GetColor(highlightBackground);
     }
@@ -87,6 +85,17 @@ public sealed class SectionHighlightAnimator : IDisposable
             HandoffBehavior.SnapshotAndReplace);
     }
 
+    public void UpdatePalette(
+        Brush normalBackground,
+        Brush highlightBackground)
+    {
+        ArgumentNullException.ThrowIfNull(normalBackground);
+        ArgumentNullException.ThrowIfNull(highlightBackground);
+        CompleteImmediately();
+        _normalColor = GetColor(normalBackground);
+        _highlightColor = GetColor(highlightBackground);
+    }
+
     public void CompleteImmediately()
     {
         if (_activeAnimation is not null &&
@@ -100,7 +109,9 @@ public sealed class SectionHighlightAnimator : IDisposable
             null);
         if (_activeSection is not null)
         {
-            _activeSection.Background = _normalBackground;
+            _activeSection.SetResourceReference(
+                Border.BackgroundProperty,
+                "SurfaceBrush");
         }
 
         _activeAnimation = null;

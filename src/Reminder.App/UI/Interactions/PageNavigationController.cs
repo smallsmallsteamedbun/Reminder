@@ -19,9 +19,9 @@ internal sealed class PageNavigationController
     private readonly Button _homeNavigationButton;
     private readonly Button _eventsNavigationButton;
     private readonly Button _settingsNavigationButton;
-    private readonly Brush _selectedBackground;
-    private readonly Brush _selectedForeground;
-    private readonly Brush _normalForeground;
+    private Brush _selectedBackground;
+    private Brush _selectedForeground;
+    private Brush _normalForeground;
     private bool _transitionInProgress;
     private ReminderPage? _transitionTarget;
     private Action? _transitionCompleted;
@@ -60,6 +60,21 @@ internal sealed class PageNavigationController
 
     public ReminderPage CurrentPage { get; private set; } =
         ReminderPage.Home;
+
+    public void UpdatePalette(
+        Brush selectedBackground,
+        Brush selectedForeground,
+        Brush normalForeground)
+    {
+        ArgumentNullException.ThrowIfNull(selectedBackground);
+        ArgumentNullException.ThrowIfNull(selectedForeground);
+        ArgumentNullException.ThrowIfNull(normalForeground);
+        _selectedBackground = selectedBackground;
+        _selectedForeground = selectedForeground;
+        _normalForeground = normalForeground;
+        SetSelectedNavigationButton(
+            GetNavigationButton(CurrentPage));
+    }
 
     public void Navigate(
         ReminderPage targetPage,

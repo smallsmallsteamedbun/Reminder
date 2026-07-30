@@ -3,10 +3,12 @@ using Reminder.App.Logic.Services;
 using Reminder.App.SystemModule.Persistence;
 using Reminder.App.SystemModule.Runtime;
 using Reminder.App.SystemModule.Settings;
+using Reminder.App.UI.Theming;
 using Reminder.App.UI.ViewModels;
 using Reminder.App.UI.Views;
 using Reminder.App.Windows.Activity;
 using Reminder.App.Windows.Notifications;
+using Reminder.App.Windows.Startup;
 using Reminder.App.Windows.Tray;
 
 namespace Reminder.App;
@@ -20,8 +22,12 @@ public partial class App : System.Windows.Application
     private IWindowsActivityMonitor? _windowsActivityMonitor;
     private ReminderPersistenceCoordinator? _persistenceCoordinator;
     private ReminderApplicationSettingsService? _settingsService;
+    private ReminderThemeService? _themeService;
+    private ReminderSingleInstanceCoordinator?
+        _singleInstanceCoordinator;
     private bool _finalStateSaved;
     private bool _exitInProgress;
+    private bool _activationRequestedBeforeWindowReady;
 
     protected override void OnStartup(System.Windows.StartupEventArgs e)
     {
@@ -29,6 +35,14 @@ public partial class App : System.Windows.Application
                 e.Args))
         {
             Shutdown(-1);
+            return;
+        }
+
+        if (!ReminderSingleInstanceCoordinator.TryAcquire(
+                OnExistingInstanceActivationRequested,
+                out _singleInstanceCoordinator))
+        {
+            Shutdown();
             return;
         }
 
@@ -99,16 +113,37 @@ public partial class App : System.Windows.Application
             _engine.ActivateRecoveredState();
         }
 
+        _themeService = new ReminderThemeService(
+            this,
+            _settingsService);
+        IWindowsStartupRegistrationService startupRegistration;
+        try
+        {
+            startupRegistration =
+                new WindowsStartupRegistrationService();
+        }
+        catch (Exception exception) when (
+            exception is InvalidOperationException or
+            ArgumentException)
+        {
+            startupRegistration =
+                new UnavailableWindowsStartupRegistrationService(
+                    exception.Message);
+        }
+
         _mainViewModel = new MainViewModel(
             _engine,
             Dispatcher,
-            _settingsService);
-        _mainWindow = new MainWindow(_mainViewModel);
+            _settingsService,
+            startupRegistration);
+        _mainWindow = new MainWindow(
+            _mainViewModel,
+            _themeService);
         _mainWindow.RestartRequested += RequestRestart;
         MainWindow = _mainWindow;
 
         _trayIconService = new TrayIconService(
-            _mainWindow.ShowAndActivate,
+            _mainWindow.ShowHomeAndActivate,
             () => _engine.PauseAll(
                 ReminderGlobalPauseDuration.UntilManualResume),
             _engine.ResumeAll,
@@ -119,14 +154,25 @@ public partial class App : System.Windows.Application
                 stateStore,
                 _settingsService);
         _persistenceCoordinator.Start();
-        _mainWindow.Show();
+        if (!_settingsService.SilentStart ||
+            _activationRequestedBeforeWindowReady)
+        {
+            _mainWindow.ShowHomeAndActivate();
+        }
 
         if (recoveryFailed)
         {
-            var dialog = new StateRecoveryFailedDialog
+            var dialog = new StateRecoveryFailedDialog();
+            if (_mainWindow.IsVisible)
             {
-                Owner = _mainWindow
-            };
+                dialog.Owner = _mainWindow;
+            }
+            else
+            {
+                dialog.WindowStartupLocation =
+                    System.Windows.WindowStartupLocation.CenterScreen;
+            }
+
             _ = dialog.ShowDialog();
         }
     }
@@ -150,6 +196,8 @@ public partial class App : System.Windows.Application
 
         _mainViewModel?.Dispose();
         _engine?.Dispose();
+        _themeService?.Dispose();
+        _singleInstanceCoordinator?.Dispose();
         base.OnExit(e);
     }
 
@@ -176,6 +224,26 @@ public partial class App : System.Windows.Application
                 e.Snapshot.IsDisplayOff,
                 e.Snapshot.IsSleeping),
             e.OccurredAt);
+    }
+
+    private void OnExistingInstanceActivationRequested()
+    {
+        if (Dispatcher.HasShutdownStarted ||
+            Dispatcher.HasShutdownFinished)
+        {
+            return;
+        }
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (_mainWindow is null)
+            {
+                _activationRequestedBeforeWindowReady = true;
+                return;
+            }
+
+            _mainWindow.ShowHomeAndActivate();
+        });
     }
 
     private bool TryRestoreState(

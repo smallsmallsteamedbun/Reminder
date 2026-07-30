@@ -11,6 +11,6 @@
 
 ## 当前版本
 
-- 当前版本：`0.6.0`
+- 当前版本：`0.7.0`
 - 更新内容：`VERSION_HISTORY.md`
-- 验证记录：`V0.6.0_VALIDATION.md`
+- 验证记录：`V0.7.0_VALIDATION.md`

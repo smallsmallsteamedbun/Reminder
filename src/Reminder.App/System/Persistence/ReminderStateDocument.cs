@@ -6,7 +6,7 @@ namespace Reminder.App.SystemModule.Persistence;
 
 internal sealed record ReminderStateDocument
 {
-    public const int CurrentVersion = 4;
+    public const int CurrentVersion = 5;
 
     public required int Version { get; init; }
 
@@ -20,6 +20,13 @@ internal sealed record ReminderStateDocument
 
     public ReminderRenderingMode RenderingMode { get; init; } =
         ReminderRenderingMode.HardwarePreferred;
+
+    public ReminderThemeMode ThemeMode { get; init; } =
+        ReminderThemeMode.FollowSystem;
+
+    public bool StartWithWindows { get; init; }
+
+    public bool SilentStart { get; init; }
 
     public int SnoozeDurationMinutes { get; init; } = 5;
 

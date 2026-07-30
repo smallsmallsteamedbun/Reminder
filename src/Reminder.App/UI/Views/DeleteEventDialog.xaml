@@ -7,6 +7,8 @@
     AllowsTransparency="True"
     AutomationProperties.AutomationId="DeleteEventDialog"
     Background="Transparent"
+    FontFamily="{StaticResource AppFontFamily}"
+    Foreground="{DynamicResource TextPrimaryBrush}"
     KeyDown="Window_OnKeyDown"
     ResizeMode="NoResize"
     ShowInTaskbar="False"
@@ -17,8 +19,8 @@
     <Border
         Margin="20"
         Padding="24"
-        Background="{StaticResource SurfaceBrush}"
-        BorderBrush="{StaticResource BorderStrongBrush}"
+        Background="{DynamicResource SurfaceBrush}"
+        BorderBrush="{DynamicResource BorderStrongBrush}"
         BorderThickness="1"
         CornerRadius="12">
         <Border.Effect>
@@ -27,7 +29,7 @@
                 Direction="270"
                 Opacity="0.2"
                 ShadowDepth="6"
-                Color="#42000000" />
+                Color="{DynamicResource DialogShadowColor}" />
         </Border.Effect>
 
         <Grid>
@@ -48,14 +50,14 @@
                     Height="34"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top"
-                    Background="{StaticResource DangerSubtleBrush}"
+                    Background="{DynamicResource DangerSubtleBrush}"
                     CornerRadius="17">
                     <TextBlock
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         FontSize="18"
                         FontWeight="Bold"
-                        Foreground="{StaticResource DangerBrush}"
+                        Foreground="{DynamicResource DangerBrush}"
                         Text="!" />
                 </Border>
 
@@ -63,13 +65,13 @@
                     <TextBlock
                         FontSize="19"
                         FontWeight="SemiBold"
-                        Foreground="{StaticResource TextPrimaryBrush}"
+                        Foreground="{DynamicResource TextPrimaryBrush}"
                         Text="是否删除事件" />
                     <TextBlock
                         x:Name="EventNameText"
                         Margin="0,9,0,0"
                         FontSize="13"
-                        Foreground="{StaticResource TextSecondaryBrush}"
+                        Foreground="{DynamicResource TextSecondaryBrush}"
                         TextWrapping="Wrap" />
                 </StackPanel>
             </Grid>
@@ -78,7 +80,7 @@
                 Grid.Row="1"
                 Height="1"
                 Margin="0,22,0,18"
-                Background="{StaticResource BorderBrush}" />
+                Background="{DynamicResource BorderBrush}" />
 
             <StackPanel
                 Grid.Row="2"

@@ -5,6 +5,7 @@ using Reminder.App.Logic.Models;
 using Reminder.App.Logic.Services;
 using Reminder.App.SystemModule.AppInfo;
 using Reminder.App.SystemModule.Settings;
+using Reminder.App.Windows.Startup;
 
 namespace Reminder.App.UI.ViewModels;
 
@@ -14,6 +15,10 @@ public sealed record GlobalPauseChoice(
 
 public sealed record RenderingModeChoice(
     ReminderRenderingMode Value,
+    string Label);
+
+public sealed record ThemeModeChoice(
+    ReminderThemeMode Value,
     string Label);
 
 public sealed record SnoozeOverflowPolicyChoice(
@@ -51,6 +56,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             "硬件优先渲染")
     ];
 
+    private static readonly IReadOnlyList<ThemeModeChoice>
+        ThemeModeChoiceValues =
+    [
+        new(ReminderThemeMode.FollowSystem, "跟随系统"),
+        new(ReminderThemeMode.Light, "浅色"),
+        new(ReminderThemeMode.Dark, "深色")
+    ];
+
     private static readonly IReadOnlyList<SnoozeOverflowPolicyChoice>
         SnoozeOverflowPolicyChoiceValues =
     [
@@ -77,6 +90,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly ReminderEngine _engine;
     private readonly Dispatcher _dispatcher;
     private readonly ReminderApplicationSettingsService _settings;
+    private readonly IWindowsStartupRegistrationService
+        _startupRegistration;
     private bool _disposed;
     private int _activeEventCount;
     private bool _isGlobalPaused;
@@ -85,7 +100,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private GlobalPauseChoice _selectedGlobalPauseChoice =
         GlobalPauseChoiceValues[0];
     private bool _synchronizingGlobalPause;
+    private ThemeModeChoice _selectedThemeModeChoice;
     private RenderingModeChoice _selectedRenderingModeChoice;
+    private bool _isStartWithWindows;
+    private bool _isSilentStart;
+    private string _startupRegistrationError = string.Empty;
     private SnoozeOverflowPolicyChoice
         _selectedSnoozeOverflowPolicyChoice;
     private NotificationDisplayDurationChoice
@@ -105,13 +124,19 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public MainViewModel(
         ReminderEngine engine,
         Dispatcher dispatcher,
-        ReminderApplicationSettingsService settings)
+        ReminderApplicationSettingsService settings,
+        IWindowsStartupRegistrationService startupRegistration)
     {
         _engine = engine;
         _dispatcher = dispatcher;
         _settings = settings;
+        _startupRegistration = startupRegistration;
+        _selectedThemeModeChoice =
+            FindThemeModeChoice(settings.ThemeMode);
         _selectedRenderingModeChoice =
             FindRenderingModeChoice(settings.RenderingMode);
+        _isStartWithWindows = settings.StartWithWindows;
+        _isSilentStart = settings.SilentStart;
         _selectedSnoozeOverflowPolicyChoice =
             FindSnoozeOverflowPolicyChoice(
                 settings.SnoozeOverflowPolicy);
@@ -129,6 +154,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _showSnoozeDurationDays = snoozeParts.ShowDays;
         _showSnoozeDurationHours = snoozeParts.ShowHours;
         _engine.StateChanged += OnEngineStateChanged;
+        ReconcileStartupRegistration();
 
         AddEventCommand = new RelayCommand(AddEvent);
         ClearSearchCommand = new RelayCommand(ClearSearch);
@@ -140,6 +166,18 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         Refresh();
         SynchronizeSearchHistory();
+    }
+
+    public MainViewModel(
+        ReminderEngine engine,
+        Dispatcher dispatcher,
+        ReminderApplicationSettingsService settings)
+        : this(
+            engine,
+            dispatcher,
+            settings,
+            new NullWindowsStartupRegistrationService())
+    {
     }
 
     public MainViewModel(
@@ -194,6 +232,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public IReadOnlyList<RenderingModeChoice> RenderingModeChoices =>
         RenderingModeChoiceValues;
+
+    public IReadOnlyList<ThemeModeChoice> ThemeModeChoices =>
+        ThemeModeChoiceValues;
 
     public IReadOnlyList<SnoozeOverflowPolicyChoice>
         SnoozeOverflowPolicyChoices =>
@@ -302,6 +343,84 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
         }
     }
+
+    public ThemeModeChoice SelectedThemeModeChoice
+    {
+        get => _selectedThemeModeChoice;
+        set
+        {
+            if (value is null ||
+                !SetProperty(ref _selectedThemeModeChoice, value) ||
+                _synchronizingSettings)
+            {
+                return;
+            }
+
+            _settings.SetThemeMode(value.Value);
+        }
+    }
+
+    public bool IsStartWithWindows
+    {
+        get => _isStartWithWindows;
+        set
+        {
+            if (_synchronizingSettings)
+            {
+                SetProperty(ref _isStartWithWindows, value);
+                return;
+            }
+
+            if (_isStartWithWindows == value)
+            {
+                return;
+            }
+
+            if (!_startupRegistration.TrySetEnabled(
+                    value,
+                    out var errorMessage))
+            {
+                StartupRegistrationError =
+                    $"无法更改开机自动启动：{errorMessage}";
+                OnPropertyChanged();
+                return;
+            }
+
+            StartupRegistrationError = string.Empty;
+            SetProperty(ref _isStartWithWindows, value);
+            _settings.SetStartWithWindows(value);
+        }
+    }
+
+    public bool IsSilentStart
+    {
+        get => _isSilentStart;
+        set
+        {
+            if (!SetProperty(ref _isSilentStart, value) ||
+                _synchronizingSettings)
+            {
+                return;
+            }
+
+            _settings.SetSilentStart(value);
+        }
+    }
+
+    public string StartupRegistrationError
+    {
+        get => _startupRegistrationError;
+        private set
+        {
+            if (SetProperty(ref _startupRegistrationError, value))
+            {
+                OnPropertyChanged(nameof(HasStartupRegistrationError));
+            }
+        }
+    }
+
+    public bool HasStartupRegistrationError =>
+        StartupRegistrationError.Length != 0;
 
     public SnoozeOverflowPolicyChoice SelectedSnoozeOverflowPolicyChoice
     {
@@ -598,7 +717,22 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public bool RestoreDefaultSettings()
     {
         var previousRenderingMode = _settings.RenderingMode;
+        var wasStartWithWindows = _settings.StartWithWindows;
+        var startupDisabled = _startupRegistration.TrySetEnabled(
+            enabled: false,
+            out var startupError);
         var changed = _settings.RestoreDefaults();
+        if (!startupDisabled && wasStartWithWindows)
+        {
+            _settings.SetStartWithWindows(true);
+            StartupRegistrationError =
+                $"无法关闭开机自动启动：{startupError}";
+        }
+        else
+        {
+            StartupRegistrationError = string.Empty;
+        }
+
         SynchronizeSettings();
         if (previousRenderingMode != _settings.RenderingMode)
         {
@@ -724,8 +858,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _synchronizingSettings = true;
         try
         {
+            SelectedThemeModeChoice =
+                FindThemeModeChoice(_settings.ThemeMode);
             SelectedRenderingModeChoice =
                 FindRenderingModeChoice(_settings.RenderingMode);
+            IsStartWithWindows = _settings.StartWithWindows;
+            IsSilentStart = _settings.SilentStart;
             SelectedSnoozeOverflowPolicyChoice =
                 FindSnoozeOverflowPolicyChoice(
                     _settings.SnoozeOverflowPolicy);
@@ -869,6 +1007,26 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         ReminderRenderingMode mode)
     {
         return RenderingModeChoiceValues.First(item => item.Value == mode);
+    }
+
+    private static ThemeModeChoice FindThemeModeChoice(
+        ReminderThemeMode mode)
+    {
+        return ThemeModeChoiceValues.First(item => item.Value == mode);
+    }
+
+    private void ReconcileStartupRegistration()
+    {
+        if (_startupRegistration.TrySetEnabled(
+                _settings.StartWithWindows,
+                out var errorMessage))
+        {
+            StartupRegistrationError = string.Empty;
+            return;
+        }
+
+        StartupRegistrationError =
+            $"无法同步开机自动启动：{errorMessage}";
     }
 
     private static SnoozeOverflowPolicyChoice

@@ -21,6 +21,13 @@
     <Color x:Key="DangerPressedColor">#9F3541</Color>
     <Color x:Key="DangerSubtleColor">#FBECEF</Color>
     <Color x:Key="SuccessColor">#3FAE78</Color>
+    <Color x:Key="TextOnAccentColor">#FFFFFFFF</Color>
+    <Color x:Key="SwitchThumbColor">#FFFFFFFF</Color>
+    <Color x:Key="PrimarySelectionColor">#E3E6FA</Color>
+    <Color x:Key="PopupShadowColor">#160F172A</Color>
+    <Color x:Key="CardShadowColor">#140F172A</Color>
+    <Color x:Key="CircleShadowColor">#120F172A</Color>
+    <Color x:Key="DialogShadowColor">#42000000</Color>
 
     <SolidColorBrush x:Key="PageBackgroundBrush" Color="{StaticResource PageBackgroundColor}" />
     <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
@@ -39,5 +46,11 @@
     <SolidColorBrush x:Key="DangerPressedBrush" Color="{StaticResource DangerPressedColor}" />
     <SolidColorBrush x:Key="DangerSubtleBrush" Color="{StaticResource DangerSubtleColor}" />
     <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
+    <SolidColorBrush x:Key="TextOnAccentBrush" Color="{StaticResource TextOnAccentColor}" />
+    <SolidColorBrush x:Key="SwitchThumbBrush" Color="{StaticResource SwitchThumbColor}" />
+    <SolidColorBrush x:Key="PrimarySelectionBrush" Color="{StaticResource PrimarySelectionColor}" />
+    <SolidColorBrush x:Key="PopupShadowBrush" Color="{StaticResource PopupShadowColor}" />
+    <SolidColorBrush x:Key="CardShadowBrush" Color="{StaticResource CardShadowColor}" />
+    <SolidColorBrush x:Key="CircleShadowBrush" Color="{StaticResource CircleShadowColor}" />
 
 </ResourceDictionary>

@@ -10,7 +10,9 @@ using Reminder.App.Logic.Services;
 using Reminder.App.SystemModule.Settings;
 using Reminder.App.SystemModule.Runtime;
 using Reminder.App.UI.Interactions;
+using Reminder.App.UI.Theming;
 using Reminder.App.UI.ViewModels;
+using Reminder.App.Windows.Appearance;
 using Button = System.Windows.Controls.Button;
 using ComboBox = System.Windows.Controls.ComboBox;
 using DataFormats = System.Windows.DataFormats;
@@ -26,6 +28,7 @@ public partial class MainWindow : Window
     private const int WmActivateApp = 0x001C;
     private const int WmMouseHorizontalWheel = 0x020E;
     private readonly MainViewModel _viewModel;
+    private readonly ReminderThemeService _themeService;
     private readonly DispatcherTimer _countdownRefreshTimer;
     private readonly DispatcherTimer _newEventHighlightTimer;
     private readonly SmoothScrollController _eventListScroller;
@@ -40,9 +43,12 @@ public partial class MainWindow : Window
     private bool _isCommittingInterval;
     private Guid? _revealWhenVisibleEventId;
 
-    public MainWindow(MainViewModel viewModel)
+    public MainWindow(
+        MainViewModel viewModel,
+        ReminderThemeService themeService)
     {
         _viewModel = viewModel;
+        _themeService = themeService;
         DataContext = viewModel;
         InitializeComponent();
         _homeCardSlots =
@@ -107,6 +113,7 @@ public partial class MainWindow : Window
             OnRenderingModeChangeRequested;
         _viewModel.HomePresentationChanged +=
             OnHomePresentationChanged;
+        _themeService.ThemeChanged += OnThemeChanged;
 
         Loaded += (_, _) => StartUiRefresh();
         IsVisibleChanged += (_, _) =>
@@ -144,6 +151,18 @@ public partial class MainWindow : Window
 
     public event Action? RestartRequested;
 
+    public void ShowHomeAndActivate()
+    {
+        var wasVisible = IsVisible;
+        NavigateTo(ReminderPage.Home);
+        if (!wasVisible)
+        {
+            _pageNavigator.CompleteImmediately();
+        }
+
+        ShowAndActivate();
+    }
+
     public void ShowAndActivate()
     {
         if (!IsVisible)
@@ -151,6 +170,7 @@ public partial class MainWindow : Window
             Show();
         }
 
+        _themeService.Reapply();
         if (WindowState == WindowState.Minimized)
         {
             WindowState = WindowState.Normal;
@@ -184,6 +204,9 @@ public partial class MainWindow : Window
         base.OnSourceInitialized(e);
         _windowSource = PresentationSource.FromVisual(this) as HwndSource;
         _windowSource?.AddHook(WindowMessageHook);
+        WindowsWindowThemeService.ApplyDarkTitleBar(
+            this,
+            _themeService.IsDark);
     }
 
     protected override void OnDeactivated(EventArgs e)
@@ -198,6 +221,7 @@ public partial class MainWindow : Window
             OnRenderingModeChangeRequested;
         _viewModel.HomePresentationChanged -=
             OnHomePresentationChanged;
+        _themeService.ThemeChanged -= OnThemeChanged;
         _eventListScroller.Dispose();
         _settingsScroller.Dispose();
         _settingsSectionHighlighter.Dispose();
@@ -384,6 +408,20 @@ public partial class MainWindow : Window
         RoutedEventArgs e)
     {
         ScrollToSettingsSection(RenderingSettingsSection);
+    }
+
+    private void AppearanceSettingsIndexButton_OnClick(
+        object sender,
+        RoutedEventArgs e)
+    {
+        ScrollToSettingsSection(AppearanceSettingsSection);
+    }
+
+    private void StartupSettingsIndexButton_OnClick(
+        object sender,
+        RoutedEventArgs e)
+    {
+        ScrollToSettingsSection(StartupSettingsSection);
     }
 
     private void NotificationSettingsIndexButton_OnClick(
@@ -919,6 +957,20 @@ public partial class MainWindow : Window
         {
             RestartRequested?.Invoke();
         }
+    }
+
+    private void OnThemeChanged(object? sender, EventArgs e)
+    {
+        _settingsSectionHighlighter.UpdatePalette(
+            (Brush)FindResource("SurfaceBrush"),
+            (Brush)FindResource("PrimarySubtleBrush"));
+        _pageNavigator.UpdatePalette(
+            (Brush)FindResource("PrimarySubtleBrush"),
+            (Brush)FindResource("PrimaryBrush"),
+            (Brush)FindResource("TextSecondaryBrush"));
+        WindowsWindowThemeService.ApplyDarkTitleBar(
+            this,
+            _themeService.IsDark);
     }
 
     private void OnHomePresentationChanged(

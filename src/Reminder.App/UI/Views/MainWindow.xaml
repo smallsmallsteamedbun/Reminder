@@ -12,9 +12,9 @@
     MinWidth="760"
     MinHeight="560"
     AutomationProperties.AutomationId="ReminderMainWindow"
-    Background="{StaticResource PageBackgroundBrush}"
+    Background="{DynamicResource PageBackgroundBrush}"
     FontFamily="{StaticResource AppFontFamily}"
-    Foreground="{StaticResource TextPrimaryBrush}"
+    Foreground="{DynamicResource TextPrimaryBrush}"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
 
@@ -33,7 +33,7 @@
             <Setter Property="Padding" Value="0" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
             <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
             <Setter Property="FontSize" Value="19" />
             <Setter Property="FontWeight" Value="Normal" />
@@ -50,10 +50,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -65,7 +65,7 @@
             <Setter Property="Padding" Value="10,0" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
             <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="FontWeight" Value="Normal" />
@@ -85,7 +85,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter Property="Opacity" Value="0.72" />
@@ -100,14 +100,14 @@
             TargetType="Button"
             BasedOn="{StaticResource SearchHistoryRowButtonStyle}">
             <Setter Property="Height" Value="30" />
-            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
         </Style>
         <Style x:Key="SettingsIndexButtonStyle" TargetType="Button">
             <Setter Property="MinHeight" Value="38" />
             <Setter Property="Padding" Value="12,8" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
             <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="Cursor" Value="Hand" />
@@ -128,12 +128,12 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="IndexBackground" Property="Background" Value="{StaticResource SurfaceSubtleBrush}" />
-                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                <Setter TargetName="IndexBackground" Property="Background" Value="{DynamicResource SurfaceSubtleBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="IndexBackground" Property="Background" Value="{StaticResource PrimarySubtleBrush}" />
-                                <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+                                <Setter TargetName="IndexBackground" Property="Background" Value="{DynamicResource PrimarySubtleBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -165,7 +165,7 @@
                         <TextBlock
                             Margin="0,5,0,0"
                             FontSize="11"
-                            Foreground="{StaticResource TextSecondaryBrush}"
+                            Foreground="{DynamicResource TextSecondaryBrush}"
                             Text="{Binding StatusText}"
                             TextTrimming="CharacterEllipsis" />
                     </StackPanel>
@@ -175,14 +175,14 @@
                         VerticalAlignment="Center"
                         FontSize="16"
                         FontWeight="SemiBold"
-                        Foreground="{StaticResource PrimaryBrush}"
+                        Foreground="{DynamicResource PrimaryBrush}"
                         Text="{Binding CountdownText}" />
                 </Grid>
             </Button>
         </DataTemplate>
     </Window.Resources>
 
-    <Grid Background="{StaticResource PageBackgroundBrush}">
+    <Grid Background="{DynamicResource PageBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -192,8 +192,8 @@
         <Border
             Grid.Row="0"
             Padding="28,21"
-            Background="{StaticResource SurfaceBrush}"
-            BorderBrush="{StaticResource BorderBrush}"
+            Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
             BorderThickness="0,0,0,1">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -205,14 +205,14 @@
                     <Border
                         Width="40"
                         Height="40"
-                        Background="{StaticResource PrimaryBrush}"
+                        Background="{DynamicResource PrimaryBrush}"
                         CornerRadius="10">
                         <TextBlock
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             FontSize="20"
                             FontWeight="Bold"
-                            Foreground="White"
+                            Foreground="{DynamicResource TextOnAccentBrush}"
                             Text="R" />
                     </Border>
                     <StackPanel
@@ -229,19 +229,19 @@
                                 Margin="6,0,0,0"
                                 Padding="5,4"
                                 VerticalAlignment="Center"
-                                Background="{StaticResource PrimarySubtleBrush}"
+                                Background="{DynamicResource PrimarySubtleBrush}"
                                 CornerRadius="11">
                                 <TextBlock
                                     FontSize="11"
                                     FontWeight="SemiBold"
-                                    Foreground="{StaticResource PrimaryBrush}"
+                                    Foreground="{DynamicResource PrimaryBrush}"
                                     Text="{Binding VersionText}" />
                             </Border>
                         </StackPanel>
                         <TextBlock
                             Margin="0,2,0,0"
                             FontSize="11"
-                            Foreground="{StaticResource TextSecondaryBrush}"
+                            Foreground="{DynamicResource TextSecondaryBrush}"
                             Text="轻量、安静地照顾你的工作节奏"
                             TextTrimming="CharacterEllipsis" />
                     </StackPanel>
@@ -251,8 +251,8 @@
                     Grid.Column="1"
                     Padding="5"
                     VerticalAlignment="Center"
-                    Background="{StaticResource SurfaceSubtleBrush}"
-                    BorderBrush="{StaticResource BorderBrush}"
+                    Background="{DynamicResource SurfaceSubtleBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
                     BorderThickness="1"
                     CornerRadius="12">
                     <StackPanel Orientation="Horizontal">
@@ -305,7 +305,7 @@
                     <TextBlock
                         VerticalAlignment="Center"
                         FontSize="13"
-                        Foreground="{StaticResource TextSecondaryBrush}"
+                        Foreground="{DynamicResource TextSecondaryBrush}"
                         Text="{Binding EventSummary}" />
                     <Grid Grid.Column="2">
                         <TextBox
@@ -322,7 +322,7 @@
                             Margin="25,0,0,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
-                            Foreground="{StaticResource TextMutedBrush}"
+                            Foreground="{DynamicResource TextMutedBrush}"
                             IsHitTestVisible="False"
                             Text="搜索事件">
                             <TextBlock.Style>
@@ -356,15 +356,15 @@
                                 Width="280"
                                 Margin="0,5,0,0"
                                 Padding="8"
-                                Background="{StaticResource SurfaceBrush}"
-                                BorderBrush="{StaticResource BorderBrush}"
+                                Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="9">
                                 <StackPanel>
                                     <TextBlock
                                         Margin="8,4,8,6"
                                         FontSize="11"
-                                        Foreground="{StaticResource TextMutedBrush}"
+                                        Foreground="{DynamicResource TextMutedBrush}"
                                         Text="最近搜索" />
                                     <ItemsControl ItemsSource="{Binding SearchHistory}">
                                         <ItemsControl.ItemTemplate>
@@ -394,7 +394,7 @@
                                     <Border
                                         Height="1"
                                         Margin="8,6,8,2"
-                                        Background="{StaticResource BorderBrush}" />
+                                        Background="{DynamicResource BorderBrush}" />
                                     <Button
                                         AutomationProperties.Name="清空搜索记录"
                                         Click="ClearSearchHistoryButton_OnClick"
@@ -414,8 +414,8 @@
                         Margin="0,0,10,0"
                         Padding="10,0"
                         VerticalAlignment="Stretch"
-                        Background="{StaticResource SurfaceBrush}"
-                        BorderBrush="{StaticResource BorderBrush}"
+                        Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
                         CornerRadius="8"
                         Visibility="{Binding IsGlobalPaused, Converter={StaticResource BooleanToVisibilityConverter}}">
@@ -425,7 +425,7 @@
                                 VerticalAlignment="Center"
                                 FontSize="13"
                                 FontWeight="SemiBold"
-                                Foreground="{StaticResource TextSecondaryBrush}"
+                                Foreground="{DynamicResource TextSecondaryBrush}"
                                 Text="全部暂停" />
                             <ComboBox
                                 Width="142"
@@ -439,7 +439,7 @@
                                 Margin="10,0,0,0"
                                 VerticalAlignment="Center"
                                 FontSize="12"
-                                Foreground="{StaticResource PrimaryBrush}"
+                                Foreground="{DynamicResource PrimaryBrush}"
                                 Text="{Binding GlobalPauseRemainingText}"
                                 Visibility="{Binding ShowGlobalPauseCountdown, Converter={StaticResource BooleanToVisibilityConverter}}" />
                         </StackPanel>
@@ -525,7 +525,7 @@
                                     <TextBlock
                                         HorizontalAlignment="Center"
                                         FontSize="14"
-                                        Foreground="{StaticResource TextSecondaryBrush}"
+                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                         Text="{Binding SelectedHomeEvent.StatusText}"
                                         TextAlignment="Center" />
                                     <TextBlock
@@ -541,7 +541,7 @@
                                         HorizontalAlignment="Center"
                                         FontSize="17"
                                         FontWeight="SemiBold"
-                                        Foreground="{StaticResource PrimaryBrush}"
+                                        Foreground="{DynamicResource PrimaryBrush}"
                                         Text="{Binding SelectedHomeEvent.Name}"
                                         TextAlignment="Center"
                                         TextTrimming="CharacterEllipsis" />
@@ -550,7 +550,7 @@
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     FontSize="17"
-                                    Foreground="{StaticResource TextSecondaryBrush}"
+                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                     Text="暂无正在计时的事件"
                                     Visibility="{Binding HasHomeEvents, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
                             </Grid>
@@ -643,7 +643,7 @@
                                                         <Style TargetType="TextBox" BasedOn="{StaticResource InputTextBoxStyle}">
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding HasNameError}" Value="True">
-                                                                    <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}" />
+                                                                    <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
@@ -652,14 +652,14 @@
                                                 <TextBlock Margin="2,5,0,0" FontSize="12">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
-                                                            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                                                            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
                                                             <Setter Property="Text" Value="{Binding StatusText}" />
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding StatusText}" Value="运行中">
-                                                                    <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                                                                    <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
                                                                 </DataTrigger>
                                                                 <DataTrigger Binding="{Binding HasNameError}" Value="True">
-                                                                    <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                                                    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
                                                                     <Setter Property="Text" Value="{Binding NameError}" />
                                                                 </DataTrigger>
                                                             </Style.Triggers>
@@ -693,7 +693,7 @@
                                                 Margin="4,1,12,0">
                                                 <TextBlock
                                                     FontSize="11"
-                                                    Foreground="{StaticResource TextMutedBrush}"
+                                                    Foreground="{DynamicResource TextMutedBrush}"
                                                     Text="{Binding CountdownLabel}" />
                                                 <TextBlock
                                                     Margin="0,5,0,0"
@@ -715,7 +715,7 @@
                                                     Margin="0,5,0,0"
                                                     HorizontalAlignment="Center"
                                                     FontSize="11"
-                                                    Foreground="{StaticResource TextSecondaryBrush}">
+                                                    Foreground="{DynamicResource TextSecondaryBrush}">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
                                                             <Setter Property="Text" Value="已关闭" />
@@ -740,8 +740,8 @@
                                         <Border
                                             Grid.Row="1"
                                             Padding="14,12"
-                                            Background="{StaticResource SurfaceSubtleBrush}"
-                                            BorderBrush="{StaticResource BorderBrush}"
+                                            Background="{DynamicResource SurfaceSubtleBrush}"
+                                            BorderBrush="{DynamicResource BorderBrush}"
                                             BorderThickness="0,1,0,0">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
@@ -758,11 +758,11 @@
                                                     <TextBlock
                                                         Margin="0,0,0,7"
                                                         FontSize="11"
-                                                        Foreground="{StaticResource TextMutedBrush}"
+                                                        Foreground="{DynamicResource TextMutedBrush}"
                                                         Text="事件类型" />
                                                     <Border
-                                                        Background="{StaticResource SurfaceBrush}"
-                                                        BorderBrush="{StaticResource BorderStrongBrush}"
+                                                        Background="{DynamicResource SurfaceBrush}"
+                                                        BorderBrush="{DynamicResource BorderStrongBrush}"
                                                         BorderThickness="1"
                                                         CornerRadius="9">
                                                         <UniformGrid Columns="2">
@@ -783,7 +783,7 @@
                                                     <TextBlock
                                                         Margin="0,9,0,0"
                                                         FontSize="12"
-                                                        Foreground="{StaticResource TextSecondaryBrush}"
+                                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                                         Text="{Binding ScheduleSummary}"
                                                         TextTrimming="CharacterEllipsis" />
                                                 </StackPanel>
@@ -793,7 +793,7 @@
                                                         <TextBlock
                                                             Margin="0,0,0,6"
                                                             FontSize="11"
-                                                            Foreground="{StaticResource TextMutedBrush}"
+                                                            Foreground="{DynamicResource TextMutedBrush}"
                                                             Text="提醒时间间隔" />
                                                         <StackPanel
                                                             Orientation="Horizontal"
@@ -813,7 +813,7 @@
                                                                     Margin="4,0,0,0"
                                                                     VerticalAlignment="Center"
                                                                     FontSize="13"
-                                                                    Foreground="{StaticResource TextSecondaryBrush}"
+                                                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                                                     Text="天" />
                                                             </StackPanel>
                                                             <StackPanel
@@ -831,7 +831,7 @@
                                                                     Margin="4,0,0,0"
                                                                     VerticalAlignment="Center"
                                                                     FontSize="13"
-                                                                    Foreground="{StaticResource TextSecondaryBrush}"
+                                                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                                                     Text="小时" />
                                                             </StackPanel>
                                                             <TextBox
@@ -845,13 +845,13 @@
                                                                 Margin="4,0,0,0"
                                                                 VerticalAlignment="Center"
                                                                 FontSize="13"
-                                                                Foreground="{StaticResource TextSecondaryBrush}"
+                                                                Foreground="{DynamicResource TextSecondaryBrush}"
                                                                 Text="分钟" />
                                                         </StackPanel>
                                                         <TextBlock
                                                             Margin="2,5,0,0"
                                                             FontSize="12"
-                                                            Foreground="{StaticResource DangerBrush}"
+                                                            Foreground="{DynamicResource DangerBrush}"
                                                             Text="{Binding IntervalError}"
                                                             Visibility="{Binding HasIntervalError, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                                     </StackPanel>
@@ -870,7 +870,7 @@
                                                                 <TextBlock
                                                                     Margin="0,0,0,6"
                                                                     FontSize="11"
-                                                                    Foreground="{StaticResource TextMutedBrush}"
+                                                                    Foreground="{DynamicResource TextMutedBrush}"
                                                                     Text="频率" />
                                                                 <ComboBox
                                                                     Width="108"
@@ -886,7 +886,7 @@
                                                                     <TextBlock
                                                                         Margin="0,0,0,6"
                                                                         FontSize="11"
-                                                                        Foreground="{StaticResource TextMutedBrush}"
+                                                                        Foreground="{DynamicResource TextMutedBrush}"
                                                                         Text="星期" />
                                                                     <ComboBox
                                                                         Width="112"
@@ -902,7 +902,7 @@
                                                                 <TextBlock
                                                                     Margin="0,0,0,6"
                                                                     FontSize="11"
-                                                                    Foreground="{StaticResource TextMutedBrush}"
+                                                                    Foreground="{DynamicResource TextMutedBrush}"
                                                                     Text="指定日期和时间" />
                                                                 <Grid>
                                                                     <Grid.ColumnDefinitions>
@@ -1015,7 +1015,7 @@
                                                         <TextBlock
                                                             Margin="2,5,0,0"
                                                             FontSize="12"
-                                                            Foreground="{StaticResource DangerBrush}"
+                                                            Foreground="{DynamicResource DangerBrush}"
                                                             Text="{Binding ScheduleError}"
                                                             Visibility="{Binding HasScheduleError, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                                     </StackPanel>
@@ -1027,7 +1027,7 @@
                                                     <TextBlock
                                                         Margin="0,0,0,6"
                                                         FontSize="11"
-                                                        Foreground="{StaticResource TextMutedBrush}"
+                                                        Foreground="{DynamicResource TextMutedBrush}"
                                                         Text="终止次数" />
                                                     <ComboBox
                                                         Width="120"
@@ -1044,7 +1044,7 @@
                                                     <TextBlock
                                                         Margin="0,0,0,6"
                                                         FontSize="11"
-                                                        Foreground="{StaticResource TextMutedBrush}"
+                                                        Foreground="{DynamicResource TextMutedBrush}"
                                                         Text="息屏和锁屏" />
 
                                                     <StackPanel Visibility="{Binding IsFixedInterval, Converter={StaticResource BooleanToVisibilityConverter}}">
@@ -1091,7 +1091,7 @@
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         FontSize="15"
-                        Foreground="{StaticResource TextMutedBrush}"
+                        Foreground="{DynamicResource TextMutedBrush}"
                         IsHitTestVisible="False"
                         Text="没有找到匹配的事件"
                         Visibility="{Binding ShowNoSearchResults, Converter={StaticResource BooleanToVisibilityConverter}}" />
@@ -1111,8 +1111,8 @@
                         Margin="0,12,0,18"
                         Padding="10"
                         VerticalAlignment="Top"
-                        Background="{StaticResource SurfaceBrush}"
-                        BorderBrush="{StaticResource BorderBrush}"
+                        Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
                         CornerRadius="10">
                         <StackPanel>
@@ -1120,12 +1120,24 @@
                                 Margin="10,6,10,9"
                                 FontSize="12"
                                 FontWeight="SemiBold"
-                                Foreground="{StaticResource TextMutedBrush}"
+                                Foreground="{DynamicResource TextMutedBrush}"
                                 Text="设置导航" />
                             <Button
+                                AutomationProperties.Name="定位到外观设置"
+                                Click="AppearanceSettingsIndexButton_OnClick"
+                                Content="外观"
+                                Style="{StaticResource SettingsIndexButtonStyle}" />
+                            <Button
+                                Margin="0,2,0,0"
                                 AutomationProperties.Name="定位到渲染模式设置"
                                 Click="RenderingSettingsIndexButton_OnClick"
                                 Content="渲染模式"
+                                Style="{StaticResource SettingsIndexButtonStyle}" />
+                            <Button
+                                Margin="0,2,0,0"
+                                AutomationProperties.Name="定位到启动设置"
+                                Click="StartupSettingsIndexButton_OnClick"
+                                Content="启动"
                                 Style="{StaticResource SettingsIndexButtonStyle}" />
                             <Button
                                 Margin="0,2,0,0"
@@ -1152,10 +1164,46 @@
                             Margin="0,12,0,18"
                             HorizontalAlignment="Stretch">
                             <Border
-                                x:Name="RenderingSettingsSection"
+                                x:Name="AppearanceSettingsSection"
                                 Padding="26"
-                                Background="{StaticResource SurfaceBrush}"
-                                BorderBrush="{StaticResource BorderBrush}"
+                                Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="12">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="250" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,32,0">
+                                        <TextBlock
+                                            FontSize="19"
+                                            FontWeight="SemiBold"
+                                            Text="外观" />
+                                        <TextBlock
+                                            Margin="0,8,0,0"
+                                            FontSize="13"
+                                            Foreground="{DynamicResource TextSecondaryBrush}"
+                                            Text="选择浅色、深色，或让 Reminder 跟随 Windows 主题。"
+                                            TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <ComboBox
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        AutomationProperties.Name="主题"
+                                        DisplayMemberPath="Label"
+                                        ItemsSource="{Binding ThemeModeChoices}"
+                                        SelectedItem="{Binding SelectedThemeModeChoice, Mode=TwoWay}"
+                                        Style="{StaticResource InputComboBoxStyle}" />
+                                </Grid>
+                            </Border>
+
+                            <Border
+                                x:Name="RenderingSettingsSection"
+                                Margin="0,14,0,0"
+                                Padding="26"
+                                Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="12">
                                 <Grid>
@@ -1171,7 +1219,7 @@
                                         <TextBlock
                                             Margin="0,8,0,0"
                                             FontSize="13"
-                                            Foreground="{StaticResource TextSecondaryBrush}"
+                                            Foreground="{DynamicResource TextSecondaryBrush}"
                                             Text="兼容模式使用 CPU 绘制界面；硬件优先模式由 WPF 根据显卡能力选择渲染路径。"
                                             TextWrapping="Wrap" />
                                     </StackPanel>
@@ -1187,11 +1235,91 @@
                             </Border>
 
                             <Border
+                                x:Name="StartupSettingsSection"
+                                Margin="0,14,0,0"
+                                Padding="26"
+                                Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="12">
+                                <StackPanel>
+                                    <TextBlock
+                                        FontSize="19"
+                                        FontWeight="SemiBold"
+                                        Text="启动" />
+
+                                    <Grid Margin="0,22,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Margin="0,0,32,0">
+                                            <TextBlock
+                                                FontSize="14"
+                                                FontWeight="SemiBold"
+                                                Text="开机自动启动" />
+                                            <TextBlock
+                                                Margin="0,6,0,0"
+                                                FontSize="12"
+                                                Foreground="{DynamicResource TextSecondaryBrush}"
+                                                Text="登录 Windows 后自动启动 Reminder。"
+                                                TextWrapping="Wrap" />
+                                        </StackPanel>
+                                        <CheckBox
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            AutomationProperties.Name="开机自动启动"
+                                            IsChecked="{Binding IsStartWithWindows, Mode=TwoWay}"
+                                            Style="{StaticResource ToggleSwitchStyle}" />
+                                    </Grid>
+
+                                    <Border
+                                        Height="1"
+                                        Margin="0,22"
+                                        Background="{DynamicResource BorderBrush}" />
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Margin="0,0,32,0">
+                                            <TextBlock
+                                                VerticalAlignment="Center"
+                                                FontSize="14"
+                                                FontWeight="SemiBold"
+                                                Text="静默启动" />
+                                            <TextBlock
+                                                Margin="0,6,0,0"
+                                                FontSize="12"
+                                                Foreground="{DynamicResource TextSecondaryBrush}"
+                                                Text="程序启动时以后台模式运行，不显示程序面板"
+                                                TextWrapping="Wrap" />
+                                        </StackPanel>
+                                        <CheckBox
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            AutomationProperties.Name="静默启动"
+                                            IsChecked="{Binding IsSilentStart, Mode=TwoWay}"
+                                            Style="{StaticResource ToggleSwitchStyle}" />
+                                    </Grid>
+
+                                    <TextBlock
+                                        Margin="0,18,0,0"
+                                        FontSize="12"
+                                        Foreground="{DynamicResource DangerBrush}"
+                                        Text="{Binding StartupRegistrationError}"
+                                        TextWrapping="Wrap"
+                                        Visibility="{Binding HasStartupRegistrationError, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border
                                 x:Name="NotificationSettingsSection"
                                 Margin="0,14,0,0"
                                 Padding="26"
-                                Background="{StaticResource SurfaceBrush}"
-                                BorderBrush="{StaticResource BorderBrush}"
+                                Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="12">
                                 <StackPanel>
@@ -1213,7 +1341,7 @@
                                             <TextBlock
                                                 Margin="0,6,0,0"
                                                 FontSize="12"
-                                                Foreground="{StaticResource TextSecondaryBrush}"
+                                                Foreground="{DynamicResource TextSecondaryBrush}"
                                                 Text="设置通知延迟的时间。"
                                                 TextWrapping="Wrap" />
                                         </StackPanel>
@@ -1238,7 +1366,7 @@
                                                         Margin="4,0,0,0"
                                                         VerticalAlignment="Center"
                                                         FontSize="13"
-                                                        Foreground="{StaticResource TextSecondaryBrush}"
+                                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                                         Text="天" />
                                                 </StackPanel>
                                                 <StackPanel
@@ -1256,7 +1384,7 @@
                                                         Margin="4,0,0,0"
                                                         VerticalAlignment="Center"
                                                         FontSize="13"
-                                                        Foreground="{StaticResource TextSecondaryBrush}"
+                                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                                         Text="小时" />
                                                 </StackPanel>
                                                 <TextBox
@@ -1270,13 +1398,13 @@
                                                     Margin="4,0,0,0"
                                                     VerticalAlignment="Center"
                                                     FontSize="13"
-                                                    Foreground="{StaticResource TextSecondaryBrush}"
+                                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                                     Text="分钟" />
                                             </StackPanel>
                                             <TextBlock
                                                 Margin="2,5,0,0"
                                                 FontSize="12"
-                                                Foreground="{StaticResource DangerBrush}"
+                                                Foreground="{DynamicResource DangerBrush}"
                                                 Text="{Binding SnoozeDurationError}"
                                                 Visibility="{Binding HasSnoozeDurationError, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                         </StackPanel>
@@ -1285,7 +1413,7 @@
                                     <Border
                                         Height="1"
                                         Margin="0,22"
-                                        Background="{StaticResource BorderBrush}" />
+                                        Background="{DynamicResource BorderBrush}" />
 
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -1300,7 +1428,7 @@
                                             <TextBlock
                                                 Margin="0,6,0,0"
                                                 FontSize="12"
-                                                Foreground="{StaticResource TextSecondaryBrush}"
+                                                Foreground="{DynamicResource TextSecondaryBrush}"
                                                 Text="此选项只作用于提醒间隔小于上一选项设定时间的固定时间事件。"
                                                 TextWrapping="Wrap" />
                                         </StackPanel>
@@ -1317,7 +1445,7 @@
                                     <Border
                                         Height="1"
                                         Margin="0,22"
-                                        Background="{StaticResource BorderBrush}" />
+                                        Background="{DynamicResource BorderBrush}" />
 
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -1332,7 +1460,7 @@
                                             <TextBlock
                                                 Margin="0,6,0,0"
                                                 FontSize="12"
-                                                Foreground="{StaticResource TextSecondaryBrush}"
+                                                Foreground="{DynamicResource TextSecondaryBrush}"
                                                 Text="横幅淡出后通知仍会进入通知中心。"
                                                 TextWrapping="Wrap" />
                                         </StackPanel>
@@ -1352,8 +1480,8 @@
                                 x:Name="RestoreDefaultsSettingsSection"
                                 Margin="0,14,0,0"
                                 Padding="26"
-                                Background="{StaticResource SurfaceBrush}"
-                                BorderBrush="{StaticResource BorderBrush}"
+                                Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="12">
                                 <Grid>
@@ -1369,7 +1497,7 @@
                                         <TextBlock
                                             Margin="0,6,0,0"
                                             FontSize="12"
-                                            Foreground="{StaticResource TextSecondaryBrush}"
+                                            Foreground="{DynamicResource TextSecondaryBrush}"
                                             Text="恢复所有设置为默认，并且不会删除事件记录。"
                                             TextWrapping="Wrap" />
                                     </StackPanel>
@@ -1392,8 +1520,8 @@
             Grid.Row="2"
             Height="30"
             Padding="28,0"
-            Background="{StaticResource SurfaceBrush}"
-            BorderBrush="{StaticResource BorderBrush}"
+            Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
             BorderThickness="0,1,0,0">
             <StackPanel
                 x:Name="NotificationStatusPanel"
@@ -1427,10 +1555,10 @@
                     Text="●">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
-                            <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding NotificationsAvailable}" Value="False">
-                                    <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -1441,10 +1569,10 @@
                     Text="{Binding NotificationStatus}">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
-                            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding NotificationsAvailable}" Value="False">
-                                    <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
