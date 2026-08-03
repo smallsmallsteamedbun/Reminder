@@ -494,15 +494,10 @@ public sealed partial class ReminderEngine : IDisposable
             var now = Now;
             if (isEnabled)
             {
-                reminderEvent.IsEnabled = true;
-                if (reminderEvent.Schedule.Type ==
-                    ReminderEventType.ScheduledTime)
+                ActivateAfterEditLocked(reminderEvent, now);
+                if (IsPastOneTimeEvent(reminderEvent, now))
                 {
-                    ResumeLocked(reminderEvent, now);
-                    if (IsPastOneTimeEvent(reminderEvent, now))
-                    {
-                        missedEventName = reminderEvent.Name;
-                    }
+                    missedEventName = reminderEvent.Name;
                 }
             }
             else

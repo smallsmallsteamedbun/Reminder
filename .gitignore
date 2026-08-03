@@ -9,6 +9,17 @@
 **/bin/
 **/obj/
 
+# Generated publish folders and installers
+artifacts/
+
 # Windows shell metadata
 Thumbs.db
 Desktop.ini
+
+# Local Codex workspace
+/AGENTS.md
+/.agents/
+/memory/
+
+# Runtime and test data
+/Data

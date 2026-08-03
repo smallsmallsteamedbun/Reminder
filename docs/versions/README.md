@@ -11,6 +11,7 @@
 
 ## 当前版本
 
-- 当前版本：`0.7.0`
+- 当前版本：`0.7.1`
 - 更新内容：`VERSION_HISTORY.md`
-- 验证记录：`V0.7.0_VALIDATION.md`
+- 功能验证：`V0.7.1_VALIDATION.md`
+- 安装器验证：`V0.7.1_INSTALLER_VALIDATION.md`
